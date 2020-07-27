@@ -21,18 +21,19 @@ package com.android.internal.telephony.cat;
  */
 public class ImageDescriptor {
     // members
-    int mWidth;
-    int mHeight;
-    int mCodingScheme;
-    int mImageId;
-    int mHighOffset;
-    int mLowOffset;
-    int mLength;
+    // MTK-START
+    public int mWidth;
+    public int mHeight;
+    public int mCodingScheme;
+    public int mImageId;
+    public int mHighOffset;
+    public int mLowOffset;
+    public int mLength;
 
     // constants
-    static final int CODING_SCHEME_BASIC = 0x11;
-    static final int CODING_SCHEME_COLOUR = 0x21;
-
+    public static final int CODING_SCHEME_BASIC = 0x11;
+    public static final int CODING_SCHEME_COLOUR = 0x21;
+    // MTK-END
     // public static final int ID_LENGTH = 9;
     // ID_LENGTH substituted by IccFileHandlerBase.GET_RESPONSE_EF_IMG_SIZE_BYTES
 
@@ -53,7 +54,9 @@ public class ImageDescriptor {
      * @param valueIndex
      * @return ImageDescriptor
      */
-    static ImageDescriptor parse(byte[] rawData, int valueIndex) {
+    // MTK-START
+    public static ImageDescriptor parse(byte[] rawData, int valueIndex) {
+    // MTK-END
         ImageDescriptor d = new ImageDescriptor();
         try {
             d.mWidth = rawData[valueIndex++] & 0xff;

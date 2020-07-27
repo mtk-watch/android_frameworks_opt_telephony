@@ -70,6 +70,8 @@ public class NetworkRegistrationManager extends Handler {
 
     private NetworkServiceConnection mServiceConnection;
 
+    private String mIwlanNetworkServiceClassName;
+
     private final BroadcastReceiver mBroadcastReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -236,7 +238,9 @@ public class NetworkRegistrationManager extends Handler {
     }
 
     private void bindService() {
+        Intent intent = null;
         String packageName = getPackageName();
+        String className = getClassName();
         if (TextUtils.isEmpty(packageName)) {
             loge("Can't find the binding package");
             return;
@@ -245,6 +249,14 @@ public class NetworkRegistrationManager extends Handler {
         if (TextUtils.equals(packageName, mTargetBindingPackageName)) {
             logd("Service " + packageName + " already bound or being bound.");
             return;
+        }
+
+        if (TextUtils.isEmpty(className)) {
+            intent = new Intent(NetworkService.SERVICE_INTERFACE);
+            intent.setPackage(packageName);
+        } else {
+            ComponentName cm = new ComponentName(packageName, className);
+            intent = new Intent(NetworkService.SERVICE_INTERFACE).setComponent(cm);
         }
 
         if (mINetworkService != null && mINetworkService.asBinder().isBinderAlive()) {
@@ -257,9 +269,6 @@ public class NetworkRegistrationManager extends Handler {
 
             mPhone.getContext().unbindService(mServiceConnection);
         }
-
-        Intent intent = new Intent(NetworkService.SERVICE_INTERFACE);
-        intent.setPackage(getPackageName());
 
         try {
             // We bind this as a foreground service because it is operating directly on the SIM,
@@ -310,6 +319,51 @@ public class NetworkRegistrationManager extends Handler {
         }
 
         return packageName;
+    }
+
+    private String getClassName() {
+        String className = null;
+        int resourceId;
+        String carrierConfig = null;
+
+        switch (mTransportType) {
+            case AccessNetworkConstants.TRANSPORT_TYPE_WWAN:
+                //resourceId = com.android.internal.R.string.config_wwan_network_service_class;
+                //carrierConfig = CarrierConfigManager
+                //        .KEY_CARRIER_NETWORK_SERVICE_WWAN_CLASS_OVERRIDE_STRING;
+                break;
+            case AccessNetworkConstants.TRANSPORT_TYPE_WLAN:
+                //resourceId = com.android.internal.R.string.config_wlan_network_service_class;
+                //carrierConfig = CarrierConfigManager
+                //        .KEY_CARRIER_NETWORK_SERVICE_WLAN_CLASS_OVERRIDE_STRING;
+                className = mIwlanNetworkServiceClassName;
+                break;
+            default:
+                throw new IllegalStateException("Transport type not WWAN or WLAN. type="
+                        + mTransportType);
+        }
+
+        // Read class name from resource overlay
+        //className = mPhone.getContext().getResources().getString(resourceId);
+
+        PersistableBundle b = mCarrierConfigManager.getConfigForSubId(mPhone.getSubId());
+
+        if (b != null && !TextUtils.isEmpty(b.getString(carrierConfig))) {
+            // If carrier config overrides it, use the one from carrier config
+            className = b.getString(carrierConfig, className);
+        }
+
+        return className;
+    }
+
+    /**
+     * Anchor method for set class name of IwlanDataService to IWLAN-AP-assisted moode
+     *
+     * @param iwlanDataServiceClass : class name of iwlan data service
+     */
+    public void setIwlanNetworkServiceClassName(String iwlanNetworkServiceClass) {
+        logd("setIwlanNetworkServiceClassName:" + iwlanNetworkServiceClass);
+        mIwlanNetworkServiceClassName = iwlanNetworkServiceClass;
     }
 
     private void logd(String msg) {

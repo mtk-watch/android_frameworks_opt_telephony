@@ -139,8 +139,11 @@ public class PhoneFactory {
                         }
                     }
                 }
+                TelephonyComponentFactory telephonyComponentFactory
+                        = TelephonyComponentFactory.getInstance()
+                        .inject(TelephonyComponentFactory.class.getName());
 
-                sPhoneNotifier = new DefaultPhoneNotifier();
+                sPhoneNotifier = telephonyComponentFactory.makeDefaultPhoneNotifier();
 
                 int cdmaSubscription = CdmaSubscriptionSourceManager.getDefault(context);
                 Rlog.i(LOG_TAG, "Cdma Subscription set to " + cdmaSubscription);
@@ -148,9 +151,7 @@ public class PhoneFactory {
                 /* In case of multi SIM mode two instances of Phone, RIL are created,
                    where as in single SIM mode only instance. isMultiSimEnabled() function checks
                    whether it is single SIM or multi SIM mode */
-                TelephonyManager tm = (TelephonyManager) context.getSystemService(
-                        Context.TELEPHONY_SERVICE);
-                int numPhones = tm.getPhoneCount();
+                int numPhones = TelephonyManager.getDefault().getPhoneCount();
 
                 int[] networkModes = new int[numPhones];
                 sPhones = new Phone[numPhones];
@@ -163,9 +164,11 @@ public class PhoneFactory {
                     networkModes[i] = RILConstants.PREFERRED_NETWORK_MODE;
 
                     Rlog.i(LOG_TAG, "Network Mode set to " + Integer.toString(networkModes[i]));
-                    sCommandsInterfaces[i] = new RIL(context, networkModes[i],
+                    sCommandsInterfaces[i] =
+                            telephonyComponentFactory.makeRil(context, networkModes[i],
                             cdmaSubscription, i);
                 }
+                telephonyComponentFactory.initRadioManager(context, numPhones, sCommandsInterfaces);
 
                 // Instantiate UiccController so that all other classes can just
                 // call getInstance()
@@ -173,6 +176,11 @@ public class PhoneFactory {
 
                 Rlog.i(LOG_TAG, "Creating SubscriptionController");
                 SubscriptionController.init(context, sCommandsInterfaces);
+
+                /// M: eMBMS feature
+                telephonyComponentFactory.initEmbmsAdaptor(context, sCommandsInterfaces);
+                /// M: eMBMS end
+
                 MultiSimSettingController.init(context, SubscriptionController.getInstance());
 
                 if (context.getPackageManager().hasSystemFeature(
@@ -185,15 +193,15 @@ public class PhoneFactory {
                     Phone phone = null;
                     int phoneType = TelephonyManager.getPhoneType(networkModes[i]);
                     if (phoneType == PhoneConstants.PHONE_TYPE_GSM) {
-                        phone = new GsmCdmaPhone(context,
+                        phone = telephonyComponentFactory.makePhone(context,
                                 sCommandsInterfaces[i], sPhoneNotifier, i,
                                 PhoneConstants.PHONE_TYPE_GSM,
-                                TelephonyComponentFactory.getInstance());
+                                telephonyComponentFactory.getInstance());
                     } else if (phoneType == PhoneConstants.PHONE_TYPE_CDMA) {
-                        phone = new GsmCdmaPhone(context,
+                        phone = telephonyComponentFactory.makePhone(context,
                                 sCommandsInterfaces[i], sPhoneNotifier, i,
                                 PhoneConstants.PHONE_TYPE_CDMA_LTE,
-                                TelephonyComponentFactory.getInstance());
+                                telephonyComponentFactory.getInstance());
                     }
                     Rlog.i(LOG_TAG, "Creating Phone with type = " + phoneType + " sub = " + i);
 
@@ -203,10 +211,8 @@ public class PhoneFactory {
                 // Set the default phone in base class.
                 // FIXME: This is a first best guess at what the defaults will be. It
                 // FIXME: needs to be done in a more controlled manner in the future.
-                if (numPhones > 0) {
-                    sPhone = sPhones[0];
-                    sCommandsInterface = sCommandsInterfaces[0];
-                }
+                sPhone = sPhones[0];
+                sCommandsInterface = sCommandsInterfaces[0];
 
                 // Ensure that we have a default SMS app. Requesting the app with
                 // updateIfNeeded set to true is enough to configure a default SMS app.
@@ -223,11 +229,31 @@ public class PhoneFactory {
 
                 sMadeDefaults = true;
 
+                telephonyComponentFactory.makeNetworkStatusUpdater(sPhones, numPhones);
+
                 Rlog.i(LOG_TAG, "Creating SubInfoRecordUpdater ");
-                sSubInfoRecordUpdater = new SubscriptionInfoUpdater(
+                // MTK-START: add on
+                sSubInfoRecordUpdater = telephonyComponentFactory.makeSubscriptionInfoUpdater(
                         BackgroundThread.get().getLooper(), context, sPhones, sCommandsInterfaces);
+                // MTK-END
                 SubscriptionController.getInstance().updatePhonesAvailability(sPhones);
 
+                // M: for data sub selector
+                telephonyComponentFactory.makeDataSubSelector(sContext, numPhones);
+
+                // M: for telephony add-on, SuppServManager need to be initialized before the
+                // following supplementary service requests
+                telephonyComponentFactory.makeSuppServManager(sContext, sPhones);
+
+                /// M: for Gaming with smooth LTE mobile data
+                telephonyComponentFactory.initGwsdService(context);
+
+                // M: for smart data switch
+                telephonyComponentFactory.makeSmartDataSwitchAssistant(sContext, sPhones);
+
+                // M: for telephony add-on, DcHelper needs to be created before the following
+                // startMonitoringImsService call
+                telephonyComponentFactory.makeDcHelper(sContext, sPhones);
 
                 // Only bring up IMS if the device supports having an IMS stack.
                 if (context.getPackageManager().hasSystemFeature(
@@ -281,9 +307,13 @@ public class PhoneFactory {
 
                 sTelephonyNetworkFactories = new TelephonyNetworkFactory[numPhones];
                 for (int i = 0; i < numPhones; i++) {
-                    sTelephonyNetworkFactories[i] = new TelephonyNetworkFactory(
+                    // M: for telephony add-on
+                    sTelephonyNetworkFactories[i] = telephonyComponentFactory
+                            .makeTelephonyNetworkFactories(
                             sSubscriptionMonitor, Looper.myLooper(), sPhones[i]);
                 }
+                telephonyComponentFactory.makeWorldPhoneManager();
+                telephonyComponentFactory.initCarrierExpress();
             }
         }
     }

@@ -62,60 +62,71 @@ public class PduComposer {
     /**
      * Error values.
      */
-    static private final int PDU_COMPOSE_SUCCESS = 0;
-    static private final int PDU_COMPOSE_CONTENT_ERROR = 1;
-    static private final int PDU_COMPOSE_FIELD_NOT_SET = 2;
-    static private final int PDU_COMPOSE_FIELD_NOT_SUPPORTED = 3;
+    /*MTK Change access type*/
+    static protected final int PDU_COMPOSE_SUCCESS = 0;
+    /*MTK Change access type*/
+    static protected final int PDU_COMPOSE_CONTENT_ERROR = 1;
+    /*MTK Change access type*/
+    static protected final int PDU_COMPOSE_FIELD_NOT_SET = 2;
+    /*MTK Change access type*/
+    static protected final int PDU_COMPOSE_FIELD_NOT_SUPPORTED = 3;
 
     /**
      * WAP values defined in WSP spec.
      */
     static private final int QUOTED_STRING_FLAG = 34;
-    static private final int END_STRING_FLAG = 0;
+    /*MTK Change access type*/
+    static protected final int END_STRING_FLAG = 0;
     static private final int LENGTH_QUOTE = 31;
     static private final int TEXT_MAX = 127;
     static private final int SHORT_INTEGER_MAX = 127;
     static private final int LONG_INTEGER_LENGTH_MAX = 8;
 
+    /*MTK Change access type*/
     /**
      * Block size when read data from InputStream.
      */
-    static private final int PDU_COMPOSER_BLOCK_SIZE = 1024;
+    static protected final int PDU_COMPOSER_BLOCK_SIZE = 1024;
 
     /**
      * The output message.
      */
     protected ByteArrayOutputStream mMessage = null;
 
+    /*MTK Change access type*/
     /**
      * The PDU.
      */
-    private GenericPdu mPdu = null;
+    protected GenericPdu mPdu = null;
 
     /**
      * Current visiting position of the mMessage.
      */
     protected int mPosition = 0;
 
+    /*MTK Change access type*/
     /**
      * Message compose buffer stack.
      */
-    private BufferStack mStack = null;
+    protected BufferStack mStack = null;
 
+    /*MTK Change access type*/
     /**
      * Content resolver.
      */
-    private final ContentResolver mResolver;
+    protected final ContentResolver mResolver;
 
+    /*MTK Change access type*/
     /**
      * Header of this pdu.
      */
-    private PduHeaders mPduHeader = null;
+    protected PduHeaders mPduHeader = null;
 
+    /*MTK Change access type*/
     /**
      * Map of all content type
      */
-    private static HashMap<String, Integer> mContentTypeMap = null;
+    protected static HashMap<String, Integer> mContentTypeMap = null;
 
     static {
         mContentTypeMap = new HashMap<String, Integer>();
@@ -476,10 +487,11 @@ public class PduComposer {
         return temp;
     }
 
+    /*MTK Change access type*/
     /**
      * Append header to mMessage.
      */
-    private int appendHeader(int field) {
+    protected int appendHeader(int field) {
         switch (field) {
             case PduHeaders.MMS_VERSION:
                 appendOctet(field);
@@ -648,10 +660,11 @@ public class PduComposer {
         return PDU_COMPOSE_SUCCESS;
     }
 
+    /*MTK Change access type*/
     /**
      * Make ReadRec.Ind.
      */
-    private int makeReadRecInd() {
+    protected int makeReadRecInd() {
         if (mMessage == null) {
             mMessage = new ByteArrayOutputStream();
             mPosition = 0;
@@ -728,10 +741,11 @@ public class PduComposer {
         return PDU_COMPOSE_SUCCESS;
     }
 
+    /*MTK Change access type*/
     /**
      * Make Acknowledge.Ind.
      */
-    private int makeAckInd() {
+    protected int makeAckInd() {
         if (mMessage == null) {
             mMessage = new ByteArrayOutputStream();
             mPosition = 0;
@@ -849,10 +863,11 @@ public class PduComposer {
         return makeMessageBody(type);
     }
 
+    /*MTK Change access type*/
     /**
      * Make message body.
      */
-    private int makeMessageBody(int type) {
+    protected int makeMessageBody(int type) {
         // 1. add body informations
         mStack.newbuf();  // Switching buffer because we need to
 
@@ -1050,14 +1065,17 @@ public class PduComposer {
         public LengthRecordNode next = null;
     }
 
+    /*MTK Change access type*/
     /**
      * Mark current message position and stact size.
      */
-    private class PositionMarker {
-        private int c_pos;   // Current position
-        private int currentStackSize;  // Current stack size
+    protected class PositionMarker {
+        /*MTK Change access type*/
+        protected int c_pos;   // Current position
+        /*MTK Change access type*/
+        protected int currentStackSize;  // Current stack size
 
-        int getLength() {
+        public int getLength() {
             // If these assert fails, likely that you are finding the
             // size of buffer that is deep in BufferStack you can only
             // find the length of the buffer that is on top
@@ -1069,21 +1087,24 @@ public class PduComposer {
         }
     }
 
+    /*MTK Change access type*/
     /**
      * This implementation can be OPTIMIZED to use only
      * 2 buffers. This optimization involves changing BufferStack
      * only... Its usage (interface) will not change.
      */
-    private class BufferStack {
-        private LengthRecordNode stack = null;
-        private LengthRecordNode toCopy = null;
+    protected class BufferStack {
+        /*MTK Change access type*/
+        protected LengthRecordNode stack = null;
+        /*MTK Change access type*/
+        protected LengthRecordNode toCopy = null;
 
         int stackSize = 0;
 
         /**
          *  Create a new message buffer and push it into the stack.
          */
-        void newbuf() {
+        public void newbuf() {
             // You can't create a new buff when toCopy != null
             // That is after calling pop() and before calling copy()
             // If you do, it is a bug
@@ -1105,10 +1126,11 @@ public class PduComposer {
             mPosition = 0;
         }
 
+        /*MTK Change access type*/
         /**
          *  Pop the message before and record current message in the stack.
          */
-        void pop() {
+        public void pop() {
             ByteArrayOutputStream currentMessage = mMessage;
             int currentPosition = mPosition;
 
@@ -1125,20 +1147,22 @@ public class PduComposer {
             toCopy.currentPosition = currentPosition;
         }
 
+        /*MTK Change access type*/
         /**
          *  Append current message to the message before.
          */
-        void copy() {
+        public void copy() {
             arraycopy(toCopy.currentMessage.toByteArray(), 0,
                     toCopy.currentPosition);
 
             toCopy = null;
         }
 
+        /*MTK Change access type*/
         /**
          *  Mark current message position
          */
-        PositionMarker mark() {
+        public PositionMarker mark() {
             PositionMarker m = new PositionMarker();
 
             m.c_pos = mPosition;

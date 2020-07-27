@@ -30,7 +30,11 @@ import android.os.Handler;
 import android.os.Message;
 import android.os.Registrant;
 import android.os.RegistrantList;
+import android.os.SystemProperties;
 import android.telephony.ServiceState;
+
+import java.lang.reflect.Method;
+import java.lang.reflect.Constructor;
 
 /**
  * TelephonyDevController - provides a unified view of the
@@ -39,23 +43,23 @@ import android.telephony.ServiceState;
  * manages the set of HardwareConfig for the framework.
  */
 public class TelephonyDevController extends Handler {
-    private static final String LOG_TAG = "TDC";
-    private static final boolean DBG = true;
+    protected static final String LOG_TAG = "TDC";
+    protected static final boolean DBG = true;
     private static final Object mLock = new Object();
 
     private static final int EVENT_HARDWARE_CONFIG_CHANGED = 1;
 
     private static TelephonyDevController sTelephonyDevController;
-    private static ArrayList<HardwareConfig> mModems = new ArrayList<HardwareConfig>();
-    private static ArrayList<HardwareConfig> mSims = new ArrayList<HardwareConfig>();
+    protected static ArrayList<HardwareConfig> mModems = new ArrayList<HardwareConfig>();
+    protected static ArrayList<HardwareConfig> mSims = new ArrayList<HardwareConfig>();
 
     private static Message sRilHardwareConfig;
 
-    private static void logd(String s) {
+    protected static void logd(String s) {
         Rlog.d(LOG_TAG, s);
     }
 
-    private static void loge(String s) {
+    protected static void loge(String s) {
         Rlog.e(LOG_TAG, s);
     }
 
@@ -64,7 +68,25 @@ public class TelephonyDevController extends Handler {
             if (sTelephonyDevController != null) {
                 throw new RuntimeException("TelephonyDevController already created!?!");
             }
-            sTelephonyDevController = new TelephonyDevController();
+            // Check telephony add on support property
+            if (SystemProperties.get("ro.vendor.mtk_telephony_add_on_policy", "0").equals("0")) {
+                String className = "com.mediatek.internal.telephony.MtkTelephonyDevController";
+                String classPackage = "/system/framework/mediatek-telephony-common.jar";
+                Class<?> clazz = null;
+                try {
+                    clazz = Class.forName(className, false, ClassLoader.getSystemClassLoader());
+                    Rlog.d(LOG_TAG, "class = " + clazz);
+                    Constructor clazzConstructfunc = clazz.getConstructor();
+                    Rlog.d(LOG_TAG, "constructor function = " + clazzConstructfunc);
+                    sTelephonyDevController =
+                            (TelephonyDevController) clazzConstructfunc.newInstance();
+                } catch (Exception  e) {
+                    Rlog.e(LOG_TAG, "No MtkTelephonyDevController! Used AOSP for instead!");
+                    sTelephonyDevController = new TelephonyDevController();
+                }
+            } else {
+                sTelephonyDevController = new TelephonyDevController();
+            }
             return sTelephonyDevController;
         }
     }
@@ -78,7 +100,7 @@ public class TelephonyDevController extends Handler {
         }
     }
 
-    private void initFromResource() {
+    protected void initFromResource() {
         Resources resource = Resources.getSystem();
         String[] hwStrings = resource.getStringArray(
             com.android.internal.R.array.config_telephonyHardware);
@@ -96,7 +118,7 @@ public class TelephonyDevController extends Handler {
         }
     }
 
-    private TelephonyDevController() {
+    public TelephonyDevController() {
         initFromResource();
 
         mModems.trimToSize();
@@ -107,7 +129,7 @@ public class TelephonyDevController extends Handler {
      * each RIL call this interface to register/unregister the unsolicited hardware
      * configuration callback data it can provide.
      */
-    public static void registerRIL(CommandsInterface cmdsIf) {
+    public void registerRIL(CommandsInterface cmdsIf) {
         /* get the current configuration from this ril... */
         cmdsIf.getHardwareConfig(sRilHardwareConfig);
         /* ... process it ... */
@@ -144,7 +166,7 @@ public class TelephonyDevController extends Handler {
     /**
      * hardware configuration update or insert.
      */
-    private static void updateOrInsert(HardwareConfig hw, ArrayList<HardwareConfig> list) {
+    protected static void updateOrInsert(HardwareConfig hw, ArrayList<HardwareConfig> list) {
         int size;
         HardwareConfig item;
         synchronized (mLock) {
@@ -165,7 +187,7 @@ public class TelephonyDevController extends Handler {
     /**
      * hardware configuration changed.
      */
-    private static void handleGetHardwareConfigChanged(AsyncResult ar) {
+    protected void handleGetHardwareConfigChanged(AsyncResult ar) {
         if ((ar.exception == null) && (ar.result != null)) {
             List hwcfg = (List)ar.result;
             for (int i = 0 ; i < hwcfg.size() ; i++) {

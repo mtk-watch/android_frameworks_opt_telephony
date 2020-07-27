@@ -92,19 +92,25 @@ public class UiccProfile extends IccCard {
 
     // The lock object is created by UiccSlot that owns the UiccCard that owns this UiccProfile.
     // This is to share the lock between UiccSlot, UiccCard and UiccProfile for now.
-    private final Object mLock;
+    // MTK-START: add on
+    protected final Object mLock;
+    // MTK-END
     private PinState mUniversalPinState;
     private int mGsmUmtsSubscriptionAppIndex;
     private int mCdmaSubscriptionAppIndex;
     private int mImsSubscriptionAppIndex;
     private UiccCardApplication[] mUiccApplications =
             new UiccCardApplication[IccCardStatus.CARD_MAX_APPS];
-    private Context mContext;
-    private CommandsInterface mCi;
-    private final UiccCard mUiccCard; //parent
+    // MTK-START: add on
+    protected Context mContext;
+    protected CommandsInterface mCi;
+    protected final UiccCard mUiccCard; //parent
+    // MTK-END
     private CatService mCatService;
     private UiccCarrierPrivilegeRules mCarrierPrivilegeRules;
-    private boolean mDisposed = false;
+    // MTK-START: add on
+    protected boolean mDisposed = false;
+    // MTK-END
 
     private RegistrantList mCarrierPrivilegeRegistrants = new RegistrantList();
     private RegistrantList mOperatorBrandOverrideRegistrants = new RegistrantList();
@@ -127,14 +133,18 @@ public class UiccProfile extends IccCard {
     private static final int EVENT_CARRIER_PRIVILEGES_LOADED = 13;
     private static final int EVENT_CARRIER_CONFIG_CHANGED = 14;
 
-    private TelephonyManager mTelephonyManager;
+    // MTK-START: add on
+    protected TelephonyManager mTelephonyManager;
+    // MTK-END
 
     private RegistrantList mNetworkLockedRegistrants = new RegistrantList();
 
-    private int mCurrentAppType = UiccController.APP_FAM_3GPP; //default to 3gpp?
-    private UiccCardApplication mUiccApplication = null;
-    private IccRecords mIccRecords = null;
-    private IccCardConstants.State mExternalState = IccCardConstants.State.UNKNOWN;
+    // MTK-START: add on
+    protected int mCurrentAppType = UiccController.APP_FAM_3GPP; //default to 3gpp?
+    protected UiccCardApplication mUiccApplication = null;
+    protected IccRecords mIccRecords = null;
+    protected IccCardConstants.State mExternalState = IccCardConstants.State.UNKNOWN;
+    // MTK-END
 
     private final ContentObserver mProvisionCompleteContentObserver =
             new ContentObserver(new Handler()) {
@@ -306,7 +316,9 @@ public class UiccProfile extends IccCard {
         }
     }
 
-    private void setCurrentAppType(boolean isGsm) {
+    // MTK-START: add on
+    protected void setCurrentAppType(boolean isGsm) {
+    // MTK-START: end
         if (VDBG) log("setCurrentAppType");
         synchronized (mLock) {
             if (isGsm) {
@@ -359,7 +371,9 @@ public class UiccProfile extends IccCard {
             }
         }
 
-        if (!TextUtils.isEmpty(newCarrierName)) {
+        // MTK-START: add on
+        if (isUdpateCarrierName(newCarrierName)) {
+        // MTK-END
             mTelephonyManager.setSimOperatorNameForPhone(mPhoneId, newCarrierName);
             mOperatorBrandOverrideRegistrants.notifyRegistrants();
         }
@@ -413,8 +427,9 @@ public class UiccProfile extends IccCard {
         }
 
         CharSequence oldSubName = subInfo.getDisplayName();
-        String newCarrierName = mTelephonyManager.getSimOperatorName(subId);
-
+        // MTK-START: add on
+        String newCarrierName = getSubscriptionDisplayName(subId, mContext);
+        // MTK-END
         if (!TextUtils.isEmpty(newCarrierName) && !newCarrierName.equals(oldSubName)) {
             log("sim name[" + mPhoneId + "] = " + newCarrierName);
             subCon.setDisplayNameUsingSrc(newCarrierName, subId, nameSource);
@@ -506,8 +521,11 @@ public class UiccProfile extends IccCard {
                 cardLocked = true;
                 lockedState = IccCardConstants.State.PUK_REQUIRED;
             } else if (appState == IccCardApplicationStatus.AppState.APPSTATE_SUBSCRIPTION_PERSO) {
+                // MTK-START: add on
                 if (mUiccApplication.getPersoSubState()
-                        == IccCardApplicationStatus.PersoSubState.PERSOSUBSTATE_SIM_NETWORK) {
+                        == IccCardApplicationStatus.PersoSubState.PERSOSUBSTATE_SIM_NETWORK ||
+                        isSupportAllNetworkLockCategory()) {
+                // MTK-END
                     if (VDBG) log("updateExternalState: PERSOSUBSTATE_SIM_NETWORK");
                     cardLocked = true;
                     lockedState = IccCardConstants.State.NETWORK_LOCKED;
@@ -606,7 +624,9 @@ public class UiccProfile extends IccCard {
         }
     }
 
-    private void registerCurrAppEvents() {
+    // MTK-START: add on
+    protected void registerCurrAppEvents() {
+    // MTK-END
         // In case of locked, only listen to the current application.
         if (mIccRecords != null) {
             mIccRecords.registerForLockedRecordsLoaded(mHandler, EVENT_ICC_LOCKED, null);
@@ -614,14 +634,18 @@ public class UiccProfile extends IccCard {
         }
     }
 
-    private void unregisterCurrAppEvents() {
+    // MTK-START: add on
+    protected void unregisterCurrAppEvents() {
+    // MTK-END
         if (mIccRecords != null) {
             mIccRecords.unregisterForLockedRecordsLoaded(mHandler);
             mIccRecords.unregisterForNetworkLockedRecordsLoaded(mHandler);
         }
     }
 
-    private void setExternalState(IccCardConstants.State newState, boolean override) {
+    // MTK-START: add on
+    protected void setExternalState(IccCardConstants.State newState, boolean override) {
+    // MTK-END
         synchronized (mLock) {
             if (!SubscriptionManager.isValidSlotIndex(mPhoneId)) {
                 loge("setExternalState: mPhoneId=" + mPhoneId + " is invalid; Return!!");
@@ -660,7 +684,9 @@ public class UiccProfile extends IccCard {
         }
     }
 
-    private void setExternalState(IccCardConstants.State newState) {
+    // MTK-START: add on
+    protected void setExternalState(IccCardConstants.State newState) {
+    // MTK-END
         setExternalState(newState, false);
     }
 
@@ -681,7 +707,9 @@ public class UiccProfile extends IccCard {
      * Locked state have a reason (PIN, PUK, NETWORK, PERM_DISABLED, CARD_IO_ERROR)
      * @return reason
      */
-    private String getIccStateReason(IccCardConstants.State state) {
+    // MTK-START: add on
+    protected String getIccStateReason(IccCardConstants.State state) {
+    // MTK-END
         switch (state) {
             case PIN_REQUIRED: return IccCardConstants.INTENT_VALUE_LOCKED_ON_PIN;
             case PUK_REQUIRED: return IccCardConstants.INTENT_VALUE_LOCKED_ON_PUK;
@@ -737,7 +765,10 @@ public class UiccProfile extends IccCard {
             if (mUiccApplication != null) {
                 mUiccApplication.supplyPin(pin, onComplete);
             } else if (onComplete != null) {
-                Exception e = new RuntimeException("ICC card is absent.");
+                // MTK-START: add on
+                //Exception e = new RuntimeException("ICC card is absent.");
+                Exception e = covertException("supplyPin");
+                // MTK-END
                 AsyncResult.forMessage(onComplete).exception = e;
                 onComplete.sendToTarget();
                 return;
@@ -751,7 +782,10 @@ public class UiccProfile extends IccCard {
             if (mUiccApplication != null) {
                 mUiccApplication.supplyPuk(puk, newPin, onComplete);
             } else if (onComplete != null) {
-                Exception e = new RuntimeException("ICC card is absent.");
+                // MTK-START: add on
+                //Exception e = new RuntimeException("ICC card is absent.");
+                Exception e = covertException("supplyPuk");
+                // MTK-END
                 AsyncResult.forMessage(onComplete).exception = e;
                 onComplete.sendToTarget();
                 return;
@@ -765,7 +799,10 @@ public class UiccProfile extends IccCard {
             if (mUiccApplication != null) {
                 mUiccApplication.supplyPin2(pin2, onComplete);
             } else if (onComplete != null) {
-                Exception e = new RuntimeException("ICC card is absent.");
+                // MTK-START: add on
+                //Exception e = new RuntimeException("ICC card is absent.");
+                Exception e = covertException("supplyPin2");
+                // MTK-END
                 AsyncResult.forMessage(onComplete).exception = e;
                 onComplete.sendToTarget();
                 return;
@@ -779,7 +816,10 @@ public class UiccProfile extends IccCard {
             if (mUiccApplication != null) {
                 mUiccApplication.supplyPuk2(puk2, newPin2, onComplete);
             } else if (onComplete != null) {
-                Exception e = new RuntimeException("ICC card is absent.");
+                // MTK-START: add on
+                //Exception e = new RuntimeException("ICC card is absent.");
+                Exception e = covertException("supplyPuk2");
+                // MTK-END
                 AsyncResult.forMessage(onComplete).exception = e;
                 onComplete.sendToTarget();
                 return;
@@ -851,7 +891,10 @@ public class UiccProfile extends IccCard {
             if (mUiccApplication != null) {
                 mUiccApplication.setIccLockEnabled(enabled, password, onComplete);
             } else if (onComplete != null) {
-                Exception e = new RuntimeException("ICC card is absent.");
+                // MTK-START: add on
+                //Exception e = new RuntimeException("ICC card is absent.");
+                Exception e = covertException("setIccLockEnabled");
+                // MTK-END
                 AsyncResult.forMessage(onComplete).exception = e;
                 onComplete.sendToTarget();
                 return;
@@ -865,7 +908,10 @@ public class UiccProfile extends IccCard {
             if (mUiccApplication != null) {
                 mUiccApplication.setIccFdnEnabled(enabled, password, onComplete);
             } else if (onComplete != null) {
-                Exception e = new RuntimeException("ICC card is absent.");
+                // MTK-START: add on
+                //Exception e = new RuntimeException("ICC card is absent.");
+                Exception e = covertException("setIccFdnEnabled");
+                // MTK-END
                 AsyncResult.forMessage(onComplete).exception = e;
                 onComplete.sendToTarget();
                 return;
@@ -879,7 +925,10 @@ public class UiccProfile extends IccCard {
             if (mUiccApplication != null) {
                 mUiccApplication.changeIccLockPassword(oldPassword, newPassword, onComplete);
             } else if (onComplete != null) {
-                Exception e = new RuntimeException("ICC card is absent.");
+                // MTK-START: add on
+                //Exception e = new RuntimeException("ICC card is absent.");
+                Exception e = covertException("changeIccLockPassword");
+                // MTK-END
                 AsyncResult.forMessage(onComplete).exception = e;
                 onComplete.sendToTarget();
                 return;
@@ -893,7 +942,10 @@ public class UiccProfile extends IccCard {
             if (mUiccApplication != null) {
                 mUiccApplication.changeIccFdnPassword(oldPassword, newPassword, onComplete);
             } else if (onComplete != null) {
-                Exception e = new RuntimeException("ICC card is absent.");
+                // MTK-START: add on
+                //Exception e = new RuntimeException("ICC card is absent.");
+                Exception e = covertException("changeIccFdnPassword");
+                // MTK-END
                 AsyncResult.forMessage(onComplete).exception = e;
                 onComplete.sendToTarget();
                 return;
@@ -943,8 +995,10 @@ public class UiccProfile extends IccCard {
                 if (mUiccApplications[i] == null) {
                     //Create newly added Applications
                     if (i < ics.mApplications.length) {
-                        mUiccApplications[i] = new UiccCardApplication(this,
+                        // MTK-START: add on
+                        mUiccApplications[i] = makeUiccApplication(this,
                                 ics.mApplications[i], mContext, mCi);
+                        // MTK-END
                     }
                 } else if (i >= ics.mApplications.length) {
                     //Delete removed applications
@@ -1162,10 +1216,18 @@ public class UiccProfile extends IccCard {
         PackageManager pm = context.getPackageManager();
         try {
             pm.getPackageInfo(pkgName, PackageManager.GET_ACTIVITIES);
-            if (DBG) log(pkgName + " is installed.");
+            // MTK-START: add on
+            if (DBG) {
+                Rlog.d(LOG_TAG, pkgName + " is installed.");
+            }
+            // MTK-END
             return true;
         } catch (PackageManager.NameNotFoundException e) {
-            if (DBG) log(pkgName + " is not installed.");
+            // MTK-START: add on
+            if (DBG) {
+                Rlog.d(LOG_TAG, pkgName + " is not installed.");
+            }
+            // MTK-END
             return false;
         }
     }
@@ -1256,8 +1318,10 @@ public class UiccProfile extends IccCard {
             if (keyValue.length == 2) {
                 map.put(keyValue[0].toUpperCase(), keyValue[1]);
             } else {
-                loge("Incorrect length of key-value pair in carrier app whitelist map.  "
+                // MTK-START: add on
+                Rlog.d(LOG_TAG, "Incorrect length of key-value pair in carrier app whitelist map.  "
                         + "Length should be exactly 2");
+                // MTK-END
             }
         }
 
@@ -1618,11 +1682,15 @@ public class UiccProfile extends IccCard {
         return null;
     }
 
-    private static void log(String msg) {
+    // MTK-START: add on
+    protected /*static*/ void log(String msg) {
+    // MTK-END
         Rlog.d(LOG_TAG, msg);
     }
 
-    private static void loge(String msg) {
+    // MTK-START: add on
+    protected /*static*/ void loge(String msg) {
+    // MTK-END
         Rlog.e(LOG_TAG, msg);
     }
 
@@ -1711,4 +1779,28 @@ public class UiccProfile extends IccCard {
         pw.println(" mExternalState=" + mExternalState);
         pw.flush();
     }
+
+    // MTK-START
+    protected Exception covertException(String operation) {
+        return new RuntimeException("ICC card is absent.");
+    }
+
+    protected UiccCardApplication makeUiccApplication(UiccProfile uiccProfile,
+            IccCardApplicationStatus as, Context c, CommandsInterface ci) {
+        return new UiccCardApplication(uiccProfile, as, c, ci);
+    }
+
+    protected boolean isSupportAllNetworkLockCategory() {
+        return false;
+    }
+
+    protected String getSubscriptionDisplayName(int subId, Context context) {
+        String newCarrierName = mTelephonyManager.getSimOperatorName(subId);
+        return newCarrierName;
+    }
+
+    protected boolean isUdpateCarrierName(String newCarrierName) {
+        return (!TextUtils.isEmpty(newCarrierName));
+    }
+    // MTK-END
 }

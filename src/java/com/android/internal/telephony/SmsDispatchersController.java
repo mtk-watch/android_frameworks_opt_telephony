@@ -89,18 +89,27 @@ public class SmsDispatchersController extends Handler {
     /** Time at which the current PARTIAL_SEGMENT_WAIT_DURATION timer was started */
     private long mCurrentWaitStartTime = INVALID_TIME;
 
-    private SMSDispatcher mCdmaDispatcher;
-    private SMSDispatcher mGsmDispatcher;
-    private ImsSmsDispatcher mImsSmsDispatcher;
+    // MTK-START
+    // M: Change visibility for our proprietary class
+    protected SMSDispatcher mCdmaDispatcher;
+    protected SMSDispatcher mGsmDispatcher;
+    protected ImsSmsDispatcher mImsSmsDispatcher;
 
-    private GsmInboundSmsHandler mGsmInboundSmsHandler;
-    private CdmaInboundSmsHandler mCdmaInboundSmsHandler;
+    protected GsmInboundSmsHandler mGsmInboundSmsHandler;
+    protected CdmaInboundSmsHandler mCdmaInboundSmsHandler;
+    // MTK-END
 
-    private Phone mPhone;
+    // MTK-START
+    // M: Change visibility for our proprietary class
+    protected Phone mPhone;
+    // MTK-END
     /** Outgoing message counter. Shared by all dispatchers. */
     private final SmsUsageMonitor mUsageMonitor;
-    private final CommandsInterface mCi;
-    private final Context mContext;
+    // MTK-START
+    // M: Change visibility for our proprietary class
+    protected final CommandsInterface mCi;
+    protected final Context mContext;
+    // MTK-END
 
     /** true if IMS is registered and sms is supported, false otherwise.*/
     private boolean mIms = false;
@@ -117,15 +126,27 @@ public class SmsDispatchersController extends Handler {
 
         // Create dispatchers, inbound SMS handlers and
         // broadcast undelivered messages in raw table.
-        mImsSmsDispatcher = new ImsSmsDispatcher(phone, this);
-        mCdmaDispatcher = new CdmaSMSDispatcher(phone, this);
-        mGsmInboundSmsHandler = GsmInboundSmsHandler.makeInboundSmsHandler(phone.getContext(),
-                storageMonitor, phone);
+        // MTK-START
+        // M: Revise for sub class
+        TelephonyComponentFactory telephonyComponentFactory = TelephonyComponentFactory
+                .getInstance().inject(TelephonyComponentFactory.class.getName());
+        mImsSmsDispatcher = telephonyComponentFactory
+                .makeImsSmsDispatcher(phone, this);
+        mCdmaDispatcher = telephonyComponentFactory
+                .makeCdmaSMSDispatcher(phone, this);
+        mGsmInboundSmsHandler = TelephonyComponentFactory
+                .getInstance().inject(GsmInboundSmsHandler.class.getName())
+                .makeGsmInboundSmsHandler(phone.getContext(), storageMonitor, phone);
+        // MTK-END
         mCdmaInboundSmsHandler = CdmaInboundSmsHandler.makeInboundSmsHandler(phone.getContext(),
                 storageMonitor, phone, (CdmaSMSDispatcher) mCdmaDispatcher);
-        mGsmDispatcher = new GsmSMSDispatcher(phone, this, mGsmInboundSmsHandler);
-        SmsBroadcastUndelivered.initialize(phone.getContext(),
+        // MTK-START
+        // M: Revise for sub class
+        mGsmDispatcher = telephonyComponentFactory
+                .makeGsmSMSDispatcher(phone, this, mGsmInboundSmsHandler);
+        telephonyComponentFactory.makeSmsBroadcastUndelivered(phone.getContext(),
                 mGsmInboundSmsHandler, mCdmaInboundSmsHandler);
+        // MTK-END
         InboundSmsHandler.registerNewMessageNotificationActionHandler(phone.getContext());
 
         mCi.registerForOn(this, EVENT_RADIO_ON, null);

@@ -17,10 +17,13 @@
 package com.android.internal.telephony.uicc;
 
 import android.annotation.UnsupportedAppUsage;
+import android.os.SystemProperties;
 import android.telephony.Rlog;
 
 import com.android.internal.telephony.uicc.IccCardStatus.PinState;
 
+
+import java.lang.reflect.Method;
 
 /**
  * See also RIL_AppStatus in include/telephony/ril.h
@@ -111,8 +114,13 @@ public class IccCardApplicationStatus {
         PERSOSUBSTATE_RUIM_HRPD_PUK,
         PERSOSUBSTATE_RUIM_CORPORATE_PUK,
         PERSOSUBSTATE_RUIM_SERVICE_PROVIDER_PUK,
-        PERSOSUBSTATE_RUIM_RUIM_PUK;
-
+        PERSOSUBSTATE_RUIM_RUIM_PUK,
+        // MTK-START: add substate type
+        PERSOSUBSTATE_SIM_NS_SP,
+        PERSOSUBSTATE_SIM_NS_SP_PUK,
+        PERSOSUBSTATE_SIM_SIM_C,
+        PERSOSUBSTATE_SIM_SIM_C_PUK;
+        // MTK-END
         boolean isPersoSubStateUnknown() {
             return this == PERSOSUBSTATE_UNKNOWN;
         }
@@ -197,7 +205,27 @@ public class IccCardApplicationStatus {
             case 23: newSubState = PersoSubState.PERSOSUBSTATE_RUIM_SERVICE_PROVIDER_PUK; break;
             case 24: newSubState = PersoSubState.PERSOSUBSTATE_RUIM_RUIM_PUK; break;
             default:
-                newSubState = PersoSubState.PERSOSUBSTATE_UNKNOWN;
+                if (SystemProperties.get("ro.vendor.mtk_telephony_add_on_policy", "0").equals(
+                        "0")) {
+                    try {
+                        String className = "com.mediatek.internal.telephony.uicc.MtkIccUtilsEx";
+                        Class<?> mtkIccUtilsEx = Class.forName(className);
+                        if (mtkIccUtilsEx != null) {
+                            Method extPersoSubstateFromRILInt = mtkIccUtilsEx.getMethod(
+                                    "PersoSubstateFromRILInt", new Class[] {int.class});
+                            newSubState =  (PersoSubState) extPersoSubstateFromRILInt.invoke(null,
+                                    substate);
+                        } else {
+                            newSubState = PersoSubState.PERSOSUBSTATE_UNKNOWN;
+                            loge("MtkIccUtilsEx is null!");
+                        }
+                    } catch (Exception e) {
+                        newSubState = PersoSubState.PERSOSUBSTATE_UNKNOWN;
+                        loge("No MtkIccUtilsEx!" + " Used AOSP for instead! e: " + e);
+                    }
+                } else {
+                    newSubState = PersoSubState.PERSOSUBSTATE_UNKNOWN;
+                }
                 loge("PersoSubstateFromRILInt: bad substate: " + substate
                         + " use PERSOSUBSTATE_UNKNOWN");
         }

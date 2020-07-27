@@ -474,7 +474,29 @@ public class EmergencyNumberTracker extends Handler {
         if (number == null) {
             return false;
         }
-        number = PhoneNumberUtils.stripSeparators(number);
+        /// M: preprocess number for emergency check @{
+        // AOSP only strip separators, which will encounter following issues:
+        // 1. Uri number is treated as emergency number
+        // 2. Post dial string is not treated as emergency number
+
+        //number = PhoneNumberUtils.stripSeparators(number);
+
+        // If the number passed in is a SIP address, return false, since the
+        // concept of "emergency numbers" is only meaningful for calls placed
+        // over the cell network.
+        // (Be sure to do this check *before* calling extractNetworkPortionAlt(),
+        // since the whole point of extractNetworkPortionAlt() is to filter out
+        // any non-dialable characters (which would turn 'abc911def@example.com'
+        // into '911', for example.))
+        if (PhoneNumberUtils.isUriNumber(number)) {
+            return false;
+        }
+
+        // Strip the separators from the number before comparing it
+        // to the list.
+        number = PhoneNumberUtils.extractNetworkPortionAlt(number);
+        /// @}
+
         if (!mEmergencyNumberListFromRadio.isEmpty()) {
             for (EmergencyNumber num : mEmergencyNumberList) {
                 // According to com.android.i18n.phonenumbers.ShortNumberInfo, in
@@ -486,6 +508,7 @@ public class EmergencyNumberTracker extends Handler {
                 } else {
                     exactMatch = false || exactMatch;
                 }
+
                 if (exactMatch) {
                     if (num.getNumber().equals(number)) {
                         return true;
@@ -645,6 +668,9 @@ public class EmergencyNumberTracker extends Handler {
         // If the number passed in is null, just return false:
         if (number == null) return false;
 
+        /// M: preprocess number for emergency check @{
+        // Move following logic to isEmergencyNumber()
+
         // If the number passed in is a SIP address, return false, since the
         // concept of "emergency numbers" is only meaningful for calls placed
         // over the cell network.
@@ -652,13 +678,14 @@ public class EmergencyNumberTracker extends Handler {
         // since the whole point of extractNetworkPortionAlt() is to filter out
         // any non-dialable characters (which would turn 'abc911def@example.com'
         // into '911', for example.))
-        if (PhoneNumberUtils.isUriNumber(number)) {
-            return false;
-        }
+        //if (PhoneNumberUtils.isUriNumber(number)) {
+        //    return false;
+        //}
 
         // Strip the separators from the number before comparing it
         // to the list.
-        number = PhoneNumberUtils.extractNetworkPortionAlt(number);
+        //number = PhoneNumberUtils.extractNetworkPortionAlt(number);
+        /// @}
 
         String emergencyNumbers = "";
         int slotId = SubscriptionController.getInstance().getSlotIndex(mPhone.getSubId());

@@ -23,7 +23,9 @@ import com.android.internal.telephony.CommandsInterface;
 /**
  * {@hide}
  */
-public final class SIMFileHandler extends IccFileHandler implements IccConstants {
+// MTK-START: add on
+public /*final*/ class SIMFileHandler extends IccFileHandler implements IccConstants {
+// MTK-END
     static final String LOG_TAG = "SIMFileHandler";
 
     //***** Instance Variables

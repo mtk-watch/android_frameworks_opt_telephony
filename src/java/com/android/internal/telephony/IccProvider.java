@@ -18,6 +18,7 @@ package com.android.internal.telephony;
 
 import android.annotation.UnsupportedAppUsage;
 import android.content.ContentProvider;
+import android.content.Context;
 import android.content.ContentValues;
 import android.content.UriMatcher;
 import android.database.Cursor;
@@ -26,6 +27,9 @@ import android.database.MergeCursor;
 import android.net.Uri;
 import android.os.RemoteException;
 import android.os.ServiceManager;
+// MTK-START: Revise for telephony add on
+import android.os.SystemProperties;
+// MTK_END
 import android.telephony.Rlog;
 import android.telephony.SubscriptionInfo;
 import android.telephony.SubscriptionManager;
@@ -35,7 +39,8 @@ import com.android.internal.telephony.uicc.AdnRecord;
 import com.android.internal.telephony.uicc.IccConstants;
 
 import java.util.List;
-
+import java.lang.reflect.Method;
+import java.lang.reflect.Constructor;
 
 /**
  * {@hide}
@@ -53,6 +58,9 @@ public class IccProvider extends ContentProvider {
         "emails",
         "_id"
     };
+
+    // M: Revise for add-on
+    static IccInternalInterface sMtkIccProvider = null;
 
     protected static final int ADN = 1;
     protected static final int ADN_SUB = 2;
@@ -81,15 +89,45 @@ public class IccProvider extends ContentProvider {
 
     private SubscriptionManager mSubscriptionManager;
 
+    // M: Revise for add-on
+    private static IccInternalInterface makeIccProvider(UriMatcher urlMatcher, Context context) {
+        String className = "com.mediatek.internal.telephony.phb.MtkIccProvider";
+        Class<?> clazz = null;
+        if (SystemProperties.get("ro.vendor.mtk_telephony_add_on_policy", "0").equals("0")) {
+            try {
+                clazz = Class.forName(className, false, ClassLoader.getSystemClassLoader());
+                Rlog.d(TAG, "class = " + clazz);
+                Constructor clazzConstructfunc = clazz.getConstructor(
+                        UriMatcher.class, Context.class);
+                Rlog.d(TAG, "constructor function = " + clazzConstructfunc);
+                return (IccInternalInterface) clazzConstructfunc.newInstance(urlMatcher, context);
+            } catch (Exception  e) {
+                Rlog.e(TAG, "No MtkIccProvider! Used AOSP for instead!");
+                return null;
+            }
+        } else {
+            Rlog.e(TAG, "No MtkIccProvider! Used AOSP for instead!");
+            return null;
+        }
+    }
+
     @Override
     public boolean onCreate() {
         mSubscriptionManager = SubscriptionManager.from(getContext());
+        // M: Revise for add-on
+        sMtkIccProvider = makeIccProvider(URL_MATCHER, getContext());
         return true;
     }
 
     @Override
     public Cursor query(Uri url, String[] projection, String selection,
             String[] selectionArgs, String sort) {
+        // M: Revise for add-on
+        if (sMtkIccProvider != null) {
+            return sMtkIccProvider.query(url, projection, selection,
+                    selectionArgs, sort);
+        }
+
         if (DBG) log("query");
 
         switch (URL_MATCHER.match(url)) {
@@ -164,6 +202,14 @@ public class IccProvider extends ContentProvider {
     @Override
     public Uri insert(Uri url, ContentValues initialValues) {
         Uri resultUri;
+        // M: Revise for add-on
+        if (sMtkIccProvider != null) {
+            resultUri = sMtkIccProvider.insert(url, initialValues);
+
+            getContext().getContentResolver().notifyChange(url, null);
+            // notify interested parties that an insertion happened
+            return resultUri;
+        }
         int efType;
         String pin2 = null;
         int subId;
@@ -260,6 +306,14 @@ public class IccProvider extends ContentProvider {
 
     @Override
     public int delete(Uri url, String where, String[] whereArgs) {
+        // M: Revise for add-on
+        if (sMtkIccProvider != null) {
+            int result = sMtkIccProvider.delete(url, where, whereArgs);
+            if (result <= 0) return result;
+            getContext().getContentResolver().notifyChange(url, null);
+            return result;
+        }
+
         int efType;
         int subId;
 
@@ -341,6 +395,14 @@ public class IccProvider extends ContentProvider {
 
     @Override
     public int update(Uri url, ContentValues values, String where, String[] whereArgs) {
+        // M: Revise for add-on
+        if (sMtkIccProvider != null) {
+            int result = sMtkIccProvider.update(url, values, where, whereArgs);
+            if (result <= 0) return result;
+            getContext().getContentResolver().notifyChange(url, null);
+            return result;
+        }
+
         String pin2 = null;
         int efType;
         int subId;

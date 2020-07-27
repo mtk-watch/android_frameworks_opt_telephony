@@ -36,18 +36,18 @@ public class DcFailBringUp {
     // counter with its --ei option name and default value
     static final String COUNTER = "counter";
     static final int DEFAULT_COUNTER = 2;
-    int mCounter;
+    public int mCounter;
 
     // failCause with its --ei option name and default value
     static final String FAIL_CAUSE = "fail_cause";
     static final int DEFAULT_FAIL_CAUSE = DataFailCause.ERROR_UNSPECIFIED;
     @DataFailCause.FailCause
-    int mFailCause;
+    public int mFailCause;
 
     // suggestedRetryTime with its --ei option name and default value
     static final String SUGGESTED_RETRY_TIME = "suggested_retry_time";
     static final int DEFAULT_SUGGESTED_RETRY_TIME = -1;
-    int mSuggestedRetryTime;
+    public int mSuggestedRetryTime;
 
     // Get the Extra Intent parameters
     void saveParameters(Intent intent, String s) {

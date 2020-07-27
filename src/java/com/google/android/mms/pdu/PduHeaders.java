@@ -319,10 +319,11 @@ public class PduHeaders {
     public static final int STORE_STATUS_ERROR_PERMANENT_MMBOX_FULL             = 0xE4;
     public static final int STORE_STATUS_ERROR_END                              = 0xFF;
 
+    /*MTK Change access type*/
     /**
      * The map contains the value of all headers.
      */
-    private HashMap<Integer, Object> mHeaderMap = null;
+    protected HashMap<Integer, Object> mHeaderMap = null;
 
     /**
      * Constructor of PduHeaders.
@@ -331,6 +332,7 @@ public class PduHeaders {
         mHeaderMap = new HashMap<Integer, Object>();
     }
 
+    /*MTK Change access type*/
     /**
      * Get octet value by header field.
      *
@@ -339,7 +341,7 @@ public class PduHeaders {
      *          with specified header field. Return 0 if
      *          the value is not set.
      */
-    protected int getOctet(int field) {
+    public int getOctet(int field) {
         Integer octet = (Integer) mHeaderMap.get(field);
         if (null == octet) {
             return 0;
@@ -492,6 +494,7 @@ public class PduHeaders {
         mHeaderMap.put(field, value);
     }
 
+    /*MTK Change access type*/
     /**
      * Get TextString value by header field.
      *
@@ -499,10 +502,11 @@ public class PduHeaders {
      * @return the TextString value of the pdu header
      *          with specified header field
      */
-    protected byte[] getTextString(int field) {
+    public byte[] getTextString(int field) {
         return (byte[]) mHeaderMap.get(field);
     }
 
+    /*MTK Change access type*/
     /**
      * Set TextString value to pdu header by header field.
      *
@@ -512,7 +516,7 @@ public class PduHeaders {
      *          with specified header field
      * @throws NullPointerException if the value is null.
      */
-    protected void setTextString(byte[] value, int field) {
+    public void setTextString(byte[] value, int field) {
         /**
          * Check whether this field can be set for specific
          * header and check validity of the field.
@@ -541,6 +545,7 @@ public class PduHeaders {
         mHeaderMap.put(field, value);
     }
 
+    /*MTK Change access type*/
     /**
      * Get EncodedStringValue value by header field.
      *
@@ -548,10 +553,11 @@ public class PduHeaders {
      * @return the EncodedStringValue value of the pdu header
      *          with specified header field
      */
-    protected EncodedStringValue getEncodedStringValue(int field) {
+    public EncodedStringValue getEncodedStringValue(int field) {
         return (EncodedStringValue) mHeaderMap.get(field);
     }
 
+    /* MTK Change access type */
     /**
      * Get TO, CC or BCC header value.
      *
@@ -559,7 +565,7 @@ public class PduHeaders {
      * @return the EncodeStringValue array of the pdu header
      *          with specified header field
      */
-    protected EncodedStringValue[] getEncodedStringValues(int field) {
+    public EncodedStringValue[] getEncodedStringValues(int field) {
         ArrayList<EncodedStringValue> list =
                 (ArrayList<EncodedStringValue>) mHeaderMap.get(field);
         if (null == list) {
@@ -569,6 +575,7 @@ public class PduHeaders {
         return list.toArray(values);
     }
 
+    /*MTK Change access type*/
     /**
      * Set EncodedStringValue value to pdu header by header field.
      *
@@ -578,7 +585,7 @@ public class PduHeaders {
      *          with specified header field
      * @throws NullPointerException if the value is null.
      */
-    protected void setEncodedStringValue(EncodedStringValue value, int field) {
+    public void setEncodedStringValue(EncodedStringValue value, int field) {
         /**
          * Check whether this field can be set for specific
          * header and check validity of the field.
@@ -641,6 +648,7 @@ public class PduHeaders {
         mHeaderMap.put(field, list);
     }
 
+    /* MTK Change access type */
     /**
      * Append one EncodedStringValue to another.
      *
@@ -648,7 +656,7 @@ public class PduHeaders {
      * @param field the field
      * @throws NullPointerException if the value is null.
      */
-    protected void appendEncodedStringValue(EncodedStringValue value,
+    public void appendEncodedStringValue(EncodedStringValue value,
                                     int field) {
         if (null == value) {
             throw new NullPointerException();
@@ -672,6 +680,7 @@ public class PduHeaders {
         mHeaderMap.put(field, list);
     }
 
+    /*MTK Change access type*/
     /**
      * Get LongInteger value by header field.
      *
@@ -680,7 +689,7 @@ public class PduHeaders {
      *          with specified header field. if return -1, the
      *          field is not existed in pdu header.
      */
-    protected long getLongInteger(int field) {
+    public long getLongInteger(int field) {
         Long longInteger = (Long) mHeaderMap.get(field);
         if (null == longInteger) {
             return -1;
@@ -689,13 +698,14 @@ public class PduHeaders {
         return longInteger.longValue();
     }
 
+    /*MTK Change access type*/
     /**
      * Set LongInteger value to pdu header by header field.
      *
      * @param value the value
      * @param field the field
      */
-    protected void setLongInteger(long value, int field) {
+    public void setLongInteger(long value, int field) {
         /**
          * Check whether this field can be set for specific
          * header and check validity of the field.

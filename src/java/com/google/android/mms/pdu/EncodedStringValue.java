@@ -32,15 +32,17 @@ public class EncodedStringValue implements Cloneable {
     private static final boolean DEBUG = false;
     private static final boolean LOCAL_LOGV = false;
 
+   /*MTK Change access type*/
     /**
      * The Char-set value.
      */
-    private int mCharacterSet;
+    protected int mCharacterSet;
 
+    /*MTK Change access type*/
     /**
      * The Text-string value.
      */
-    private byte[] mData;
+    protected byte[] mData;
 
     /**
      * Constructor.

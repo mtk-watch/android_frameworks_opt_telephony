@@ -18,6 +18,7 @@ package com.android.internal.telephony.imsphone;
 
 import com.android.internal.telephony.Phone;
 import com.android.internal.telephony.PhoneNotifier;
+import com.android.internal.telephony.TelephonyComponentFactory;
 
 import android.content.Context;
 import android.telephony.Rlog;
@@ -38,7 +39,11 @@ public class ImsPhoneFactory {
             PhoneNotifier phoneNotifier, Phone defaultPhone) {
 
         try {
-            return new ImsPhone(context, phoneNotifier, defaultPhone);
+            /// M: add-on @{
+            //return new ImsPhone(context, phoneNotifier, defaultPhone);
+            return TelephonyComponentFactory.getInstance().inject(ImsPhone.class.getName())
+                    .makeImsPhone(context, phoneNotifier, defaultPhone);
+            /// @}
         } catch (Exception e) {
             Rlog.e("VoltePhoneFactory", "makePhone", e);
             return null;

@@ -24,7 +24,9 @@ import com.android.internal.telephony.CommandsInterface;
  * {@hide}
  * This class should be used to access files in CSIM ADF
  */
-public final class CsimFileHandler extends IccFileHandler implements IccConstants {
+// MTK START: add-on
+public /*final*/ class CsimFileHandler extends IccFileHandler implements IccConstants {
+// MTK END
     static final String LOG_TAG = "CsimFH";
 
     public CsimFileHandler(UiccCardApplication app, String aid, CommandsInterface ci) {

@@ -39,48 +39,49 @@ import java.util.ArrayList;
 public class UsimPhoneBookManager extends Handler implements IccConstants {
     private static final String LOG_TAG = "UsimPhoneBookManager";
     private static final boolean DBG = true;
-    private ArrayList<PbrRecord> mPbrRecords;
-    private Boolean mIsPbrPresent;
-    private IccFileHandler mFh;
-    private AdnRecordCache mAdnCache;
-    private Object mLock = new Object();
-    private ArrayList<AdnRecord> mPhoneBookRecords;
-    private ArrayList<byte[]> mIapFileRecord;
-    private ArrayList<byte[]> mEmailFileRecord;
+    // M: Revise for add-on (private => protected)
+    protected ArrayList<PbrRecord> mPbrRecords;
+    protected Boolean mIsPbrPresent;
+    protected IccFileHandler mFh;
+    protected AdnRecordCache mAdnCache;
+    protected Object mLock = new Object();
+    protected ArrayList<AdnRecord> mPhoneBookRecords;
+    protected ArrayList<byte[]> mIapFileRecord;
+    protected ArrayList<byte[]> mEmailFileRecord;
 
     // email list for each ADN record. The key would be
     // ADN's efid << 8 + record #
-    private SparseArray<ArrayList<String>> mEmailsForAdnRec;
+    protected SparseArray<ArrayList<String>> mEmailsForAdnRec;
 
     // SFI to ADN Efid mapping table
-    private SparseIntArray mSfiEfidTable;
+    protected SparseIntArray mSfiEfidTable;
 
-    private boolean mRefreshCache = false;
+    protected boolean mRefreshCache = false;
 
 
-    private static final int EVENT_PBR_LOAD_DONE = 1;
-    private static final int EVENT_USIM_ADN_LOAD_DONE = 2;
-    private static final int EVENT_IAP_LOAD_DONE = 3;
-    private static final int EVENT_EMAIL_LOAD_DONE = 4;
+    protected static final int EVENT_PBR_LOAD_DONE = 1;
+    protected static final int EVENT_USIM_ADN_LOAD_DONE = 2;
+    protected static final int EVENT_IAP_LOAD_DONE = 3;
+    protected static final int EVENT_EMAIL_LOAD_DONE = 4;
 
-    private static final int USIM_TYPE1_TAG   = 0xA8;
-    private static final int USIM_TYPE2_TAG   = 0xA9;
-    private static final int USIM_TYPE3_TAG   = 0xAA;
-    private static final int USIM_EFADN_TAG   = 0xC0;
-    private static final int USIM_EFIAP_TAG   = 0xC1;
-    private static final int USIM_EFEXT1_TAG  = 0xC2;
-    private static final int USIM_EFSNE_TAG   = 0xC3;
-    private static final int USIM_EFANR_TAG   = 0xC4;
-    private static final int USIM_EFPBC_TAG   = 0xC5;
-    private static final int USIM_EFGRP_TAG   = 0xC6;
-    private static final int USIM_EFAAS_TAG   = 0xC7;
-    private static final int USIM_EFGSD_TAG   = 0xC8;
-    private static final int USIM_EFUID_TAG   = 0xC9;
-    private static final int USIM_EFEMAIL_TAG = 0xCA;
-    private static final int USIM_EFCCP1_TAG  = 0xCB;
+    protected static final int USIM_TYPE1_TAG   = 0xA8;
+    protected static final int USIM_TYPE2_TAG   = 0xA9;
+    protected static final int USIM_TYPE3_TAG   = 0xAA;
+    protected static final int USIM_EFADN_TAG   = 0xC0;
+    protected static final int USIM_EFIAP_TAG   = 0xC1;
+    protected static final int USIM_EFEXT1_TAG  = 0xC2;
+    protected static final int USIM_EFSNE_TAG   = 0xC3;
+    protected static final int USIM_EFANR_TAG   = 0xC4;
+    protected static final int USIM_EFPBC_TAG   = 0xC5;
+    protected static final int USIM_EFGRP_TAG   = 0xC6;
+    protected static final int USIM_EFAAS_TAG   = 0xC7;
+    protected static final int USIM_EFGSD_TAG   = 0xC8;
+    protected static final int USIM_EFUID_TAG   = 0xC9;
+    protected static final int USIM_EFEMAIL_TAG = 0xCA;
+    protected static final int USIM_EFCCP1_TAG  = 0xCB;
 
-    private static final int INVALID_SFI = -1;
-    private static final byte INVALID_BYTE = -1;
+    protected static final int INVALID_SFI = -1;
+    protected static final byte INVALID_BYTE = -1;
 
     // class File represent a PBR record TLV object which points to the rest of the phonebook EFs
     private class File {
@@ -166,8 +167,9 @@ public class UsimPhoneBookManager extends Handler implements IccConstants {
         return mPhoneBookRecords;
     }
 
+    // M: Revise for add-on (protected)
     // Refresh the phonebook cache.
-    private void refreshCache() {
+    protected void refreshCache() {
         if (mPbrRecords == null) return;
         mPhoneBookRecords.clear();
 
@@ -182,8 +184,9 @@ public class UsimPhoneBookManager extends Handler implements IccConstants {
         mRefreshCache = true;
     }
 
+    // M: Revise for add-on (protected)
     // Read the phonebook reference file EF_PBR.
-    private void readPbrFileAndWait() {
+    protected void readPbrFileAndWait() {
         mFh.loadEFLinearFixedAll(EF_PBR, obtainMessage(EVENT_PBR_LOAD_DONE));
         try {
             mLock.wait();

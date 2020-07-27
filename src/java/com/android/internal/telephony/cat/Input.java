@@ -39,7 +39,9 @@ public class Input implements Parcelable {
     public Duration duration;
     public boolean iconSelfExplanatory;
 
-    Input() {
+    // MTK-START
+    public Input() {
+    // MTK-END
         text = "";
         defaultText = null;
         icon = null;

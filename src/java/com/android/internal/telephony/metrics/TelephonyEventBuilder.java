@@ -32,7 +32,9 @@ import static com.android.internal.telephony.nano.TelephonyProto.TelephonyServic
 import static com.android.internal.telephony.nano.TelephonyProto.TelephonySettings;
 
 import android.os.SystemClock;
+// MTK-START
 import android.telephony.TelephonyManager;
+// MTK-END
 import android.util.SparseArray;
 
 import com.android.internal.telephony.nano.TelephonyProto.ActiveSubscriptionInfo;
@@ -166,6 +168,10 @@ public class TelephonyEventBuilder {
         mEvent.simState = new int[phoneCount];
         Arrays.fill(mEvent.simState, SimState.SIM_STATE_UNKNOWN);
         mEvent.type = Type.SIM_STATE_CHANGED;
+        // MTK-START
+        mEvent.simState = new int[TelephonyManager.getDefault().getPhoneCount()];
+       // mEvent.simState = new int[simStates.size()];
+       // MTK-END
         for (int i = 0; i < simStates.size(); i++) {
             int key = simStates.keyAt(i);
             if (0 <= key && key < phoneCount) {

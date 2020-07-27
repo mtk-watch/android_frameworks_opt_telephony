@@ -55,6 +55,14 @@ public class CellBroadcastHandler extends WakeLockStateMachine {
         super(debugTag, context, phone);
     }
 
+    // MTK-START
+    // Add dummy constructor for sub class
+    protected CellBroadcastHandler(String debugTag, Context context, Phone phone,
+            Object dummy) {
+        super(debugTag, context, phone, dummy);
+    }
+    // MTK-END
+
     /**
      * Create a new CellBroadcastHandler.
      * @param context the context to use for dispatching Intents

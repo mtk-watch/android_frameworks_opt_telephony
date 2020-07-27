@@ -37,6 +37,7 @@ import android.os.HwBinder;
 import android.os.Message;
 import android.os.Registrant;
 import android.os.RemoteException;
+import android.os.SystemProperties;
 import android.os.WorkSource;
 import android.telephony.Rlog;
 import android.util.SparseArray;
@@ -47,6 +48,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicLong;
+
+import java.lang.reflect.Method;
+import java.lang.reflect.Constructor;
 
 /**
  * This class provides wrapper APIs for IRadioConfig interface.
@@ -88,7 +92,7 @@ public class RadioConfig extends Handler {
         }
     }
 
-    private RadioConfig(Context context) {
+    protected RadioConfig(Context context) {
         ConnectivityManager cm = (ConnectivityManager) context.getSystemService(
                 Context.CONNECTIVITY_SERVICE);
         mIsMobileNetworkSupported = cm.isNetworkSupported(ConnectivityManager.TYPE_MOBILE);
@@ -106,7 +110,24 @@ public class RadioConfig extends Handler {
      */
     public static RadioConfig getInstance(Context context) {
         if (sRadioConfig == null) {
-            sRadioConfig = new RadioConfig(context);
+            // Check telephony add on support property
+            if (SystemProperties.get("ro.vendor.mtk_telephony_add_on_policy", "0").equals("0")) {
+                String className = "com.mediatek.internal.telephony.MtkRadioConfig";
+                String classPackage = "/system/framework/mediatek-telephony-common.jar";
+                Class<?> clazz = null;
+                try {
+                    clazz = Class.forName(className, false, ClassLoader.getSystemClassLoader());
+                    logd("class = " + clazz);
+                    Constructor clazzConstructfunc = clazz.getConstructor(Context.class);
+                    logd("constructor function = " + clazzConstructfunc);
+                    sRadioConfig = (RadioConfig) clazzConstructfunc.newInstance(context);
+                } catch (Exception  e) {
+                    loge("No MtkRadioConfig! Used AOSP for instead!");
+                    sRadioConfig = new RadioConfig(context);
+                }
+            } else {
+                sRadioConfig = new RadioConfig(context);
+            }
         }
         return sRadioConfig;
     }
@@ -197,7 +218,7 @@ public class RadioConfig extends Handler {
             // Try to get service from different versions.
             try {
                 mRadioConfigProxy = android.hardware.radio.config.V1_1.IRadioConfig.getService(
-                        true);
+                        isGetHidlServiceSync());
                 mRadioConfigVersion = RADIO_CONFIG_HAL_VERSION_1_1;
             } catch (NoSuchElementException e) {
             }
@@ -205,7 +226,7 @@ public class RadioConfig extends Handler {
             if (mRadioConfigProxy == null) {
                 try {
                     mRadioConfigProxy = android.hardware.radio.config.V1_0
-                            .IRadioConfig.getService(true);
+                            .IRadioConfig.getService(isGetHidlServiceSync());
                     mRadioConfigVersion = RADIO_CONFIG_HAL_VERSION_1_0;
                 } catch (NoSuchElementException e) {
                 }
@@ -493,5 +514,16 @@ public class RadioConfig extends Handler {
 
     private static void loge(String log) {
         Rlog.e(TAG, log);
+    }
+
+    /**
+     * Get HIDL service with synchronous function may cause main thread blocking and cause ANR.
+     * We will override this function and use unsync function.
+     *
+     * @return true : sync get service
+     *         false : unsync get service
+     */
+    protected boolean isGetHidlServiceSync() {
+        return true;
     }
 }

@@ -67,97 +67,97 @@ import java.util.regex.Pattern;
  * {@hide}
  *
  */
-public final class GsmMmiCode extends Handler implements MmiCode {
+public class GsmMmiCode extends Handler implements MmiCode {
     static final String LOG_TAG = "GsmMmiCode";
 
     //***** Constants
 
     // Max Size of the Short Code (aka Short String from TS 22.030 6.5.2)
-    static final int MAX_LENGTH_SHORT_CODE = 2;
+    protected static final int MAX_LENGTH_SHORT_CODE = 2;
 
     // TS 22.030 6.5.2 Every Short String USSD command will end with #-key
     // (known as #-String)
-    static final char END_OF_USSD_COMMAND = '#';
+    protected static final char END_OF_USSD_COMMAND = '#';
 
     // From TS 22.030 6.5.2
-    static final String ACTION_ACTIVATE = "*";
-    static final String ACTION_DEACTIVATE = "#";
-    static final String ACTION_INTERROGATE = "*#";
-    static final String ACTION_REGISTER = "**";
-    static final String ACTION_ERASURE = "##";
+    protected static final String ACTION_ACTIVATE = "*";
+    protected static final String ACTION_DEACTIVATE = "#";
+    protected static final String ACTION_INTERROGATE = "*#";
+    protected static final String ACTION_REGISTER = "**";
+    protected static final String ACTION_ERASURE = "##";
 
     // Supp Service codes from TS 22.030 Annex B
 
     //Called line presentation
-    static final String SC_CLIP    = "30";
-    static final String SC_CLIR    = "31";
+    protected static final String SC_CLIP    = "30";
+    protected static final String SC_CLIR    = "31";
 
     // Call Forwarding
-    static final String SC_CFU     = "21";
-    static final String SC_CFB     = "67";
-    static final String SC_CFNRy   = "61";
-    static final String SC_CFNR    = "62";
+    protected static final String SC_CFU     = "21";
+    protected static final String SC_CFB     = "67";
+    protected static final String SC_CFNRy   = "61";
+    protected static final String SC_CFNR    = "62";
 
-    static final String SC_CF_All = "002";
-    static final String SC_CF_All_Conditional = "004";
+    protected static final String SC_CF_All = "002";
+    protected static final String SC_CF_All_Conditional = "004";
 
     // Call Waiting
-    static final String SC_WAIT     = "43";
+    protected static final String SC_WAIT     = "43";
 
     // Call Barring
-    static final String SC_BAOC         = "33";
-    static final String SC_BAOIC        = "331";
-    static final String SC_BAOICxH      = "332";
-    static final String SC_BAIC         = "35";
-    static final String SC_BAICr        = "351";
+    protected static final String SC_BAOC         = "33";
+    protected static final String SC_BAOIC        = "331";
+    protected static final String SC_BAOICxH      = "332";
+    protected static final String SC_BAIC         = "35";
+    protected static final String SC_BAICr        = "351";
 
-    static final String SC_BA_ALL       = "330";
-    static final String SC_BA_MO        = "333";
-    static final String SC_BA_MT        = "353";
+    protected static final String SC_BA_ALL       = "330";
+    protected static final String SC_BA_MO        = "333";
+    protected static final String SC_BA_MT        = "353";
 
     // Supp Service Password registration
-    static final String SC_PWD          = "03";
+    protected static final String SC_PWD          = "03";
 
     // PIN/PIN2/PUK/PUK2
-    static final String SC_PIN          = "04";
-    static final String SC_PIN2         = "042";
-    static final String SC_PUK          = "05";
-    static final String SC_PUK2         = "052";
+    protected static final String SC_PIN          = "04";
+    protected static final String SC_PIN2         = "042";
+    protected static final String SC_PUK          = "05";
+    protected static final String SC_PUK2         = "052";
 
     //***** Event Constants
 
-    static final int EVENT_SET_COMPLETE         = 1;
-    static final int EVENT_GET_CLIR_COMPLETE    = 2;
-    static final int EVENT_QUERY_CF_COMPLETE    = 3;
-    static final int EVENT_USSD_COMPLETE        = 4;
-    static final int EVENT_QUERY_COMPLETE       = 5;
-    static final int EVENT_SET_CFF_COMPLETE     = 6;
-    static final int EVENT_USSD_CANCEL_COMPLETE = 7;
+    protected static final int EVENT_SET_COMPLETE         = 1;
+    protected static final int EVENT_GET_CLIR_COMPLETE    = 2;
+    protected static final int EVENT_QUERY_CF_COMPLETE    = 3;
+    protected static final int EVENT_USSD_COMPLETE        = 4;
+    protected static final int EVENT_QUERY_COMPLETE       = 5;
+    protected static final int EVENT_SET_CFF_COMPLETE     = 6;
+    protected static final int EVENT_USSD_CANCEL_COMPLETE = 7;
 
     //***** Instance Variables
 
-    GsmCdmaPhone mPhone;
-    Context mContext;
-    UiccCardApplication mUiccApplication;
-    IccRecords mIccRecords;
+    protected GsmCdmaPhone mPhone;
+    protected Context mContext;
+    protected UiccCardApplication mUiccApplication;
+    protected IccRecords mIccRecords;
 
-    String mAction;              // One of ACTION_*
-    String mSc;                  // Service Code
-    String mSia, mSib, mSic;       // Service Info a,b,c
-    String mPoundString;         // Entire MMI string up to and including #
+    protected String mAction;              // One of ACTION_*
+    protected String mSc;                  // Service Code
+    protected String mSia, mSib, mSic;       // Service Info a,b,c
+    protected String mPoundString;         // Entire MMI string up to and including #
     public String mDialingNumber;
-    String mPwd;                 // For password registration
+    protected String mPwd;                 // For password registration
 
     /** Set to true in processCode, not at newFromDialString time */
-    private boolean mIsPendingUSSD;
+    protected boolean mIsPendingUSSD;
 
-    private boolean mIsUssdRequest;
+    protected boolean mIsUssdRequest;
 
-    private boolean mIsCallFwdReg;
-    State mState = State.PENDING;
-    CharSequence mMessage;
-    private boolean mIsSsInfo = false;
-    private ResultReceiver mCallbackReceiver;
+    protected boolean mIsCallFwdReg;
+    protected State mState = State.PENDING;
+    protected CharSequence mMessage;
+    protected boolean mIsSsInfo = false;
+    protected ResultReceiver mCallbackReceiver;
 
 
     //***** Class Variables
@@ -165,7 +165,7 @@ public final class GsmMmiCode extends Handler implements MmiCode {
 
     // See TS 22.030 6.5.2 "Structure of the MMI"
 
-    static Pattern sPatternSuppService = Pattern.compile(
+    protected static Pattern sPatternSuppService = Pattern.compile(
         "((\\*|#|\\*#|\\*\\*|##)(\\d{2,3})(\\*([^*#]*)(\\*([^*#]*)(\\*([^*#]*)(\\*([^*#]*))?)?)?)?#)(.*)");
 /*       1  2                    3          4  5       6   7         8    9     10  11             12
 
@@ -178,18 +178,18 @@ public final class GsmMmiCode extends Handler implements MmiCode {
          10 = dialing number
 */
 
-    static final int MATCH_GROUP_POUND_STRING = 1;
+    protected static final int MATCH_GROUP_POUND_STRING = 1;
 
-    static final int MATCH_GROUP_ACTION = 2;
+    protected static final int MATCH_GROUP_ACTION = 2;
                         //(activation/interrogation/registration/erasure)
 
-    static final int MATCH_GROUP_SERVICE_CODE = 3;
-    static final int MATCH_GROUP_SIA = 5;
-    static final int MATCH_GROUP_SIB = 7;
-    static final int MATCH_GROUP_SIC = 9;
-    static final int MATCH_GROUP_PWD_CONFIRM = 11;
-    static final int MATCH_GROUP_DIALING_NUMBER = 12;
-    static private String[] sTwoDigitNumberPattern;
+    protected static final int MATCH_GROUP_SERVICE_CODE = 3;
+    protected static final int MATCH_GROUP_SIA = 5;
+    protected static final int MATCH_GROUP_SIB = 7;
+    protected static final int MATCH_GROUP_SIC = 9;
+    protected static final int MATCH_GROUP_PWD_CONFIRM = 11;
+    protected static final int MATCH_GROUP_DIALING_NUMBER = 12;
+    static protected String[] sTwoDigitNumberPattern;
 
     //***** Public Class methods
 
@@ -274,7 +274,7 @@ public final class GsmMmiCode extends Handler implements MmiCode {
         return ret;
     }
 
-    private static String convertCdmaMmiCodesTo3gppMmiCodes(String dialString) {
+    protected static String convertCdmaMmiCodesTo3gppMmiCodes(String dialString) {
         Matcher m;
         m = sPatternCdmaMmiCodeWhileRoaming.matcher(dialString);
         if (m.matches()) {
@@ -342,7 +342,7 @@ public final class GsmMmiCode extends Handler implements MmiCode {
         }
     }
 
-    void parseSsData(SsData ssData) {
+    protected void parseSsData(SsData ssData) {
         CommandException ex;
 
         ex = CommandException.fromRilErrno(ssData.result);
@@ -393,7 +393,7 @@ public final class GsmMmiCode extends Handler implements MmiCode {
         }
     }
 
-    private String getScStringFromScType(SsData.ServiceType sType) {
+    protected String getScStringFromScType(SsData.ServiceType sType) {
         switch (sType) {
             case SS_CFU:
                 return SC_CFU;
@@ -434,7 +434,7 @@ public final class GsmMmiCode extends Handler implements MmiCode {
         return "";
     }
 
-    private String getActionStringFromReqType(SsData.RequestType rType) {
+    protected String getActionStringFromReqType(SsData.RequestType rType) {
         switch (rType) {
             case SS_ACTIVATION:
                 return ACTION_ACTIVATE;
@@ -451,7 +451,7 @@ public final class GsmMmiCode extends Handler implements MmiCode {
         return "";
     }
 
-    private boolean isServiceClassVoiceorNone(int serviceClass) {
+    protected boolean isServiceClassVoiceorNone(int serviceClass) {
         return (((serviceClass & CommandsInterface.SERVICE_CLASS_VOICE) != 0) ||
                 (serviceClass == CommandsInterface.SERVICE_CLASS_NONE));
     }
@@ -461,7 +461,7 @@ public final class GsmMmiCode extends Handler implements MmiCode {
     /** make empty strings be null.
      *  Regexp returns empty strings for empty groups
      */
-    private static String
+    protected static String
     makeEmptyNull (String s) {
         if (s != null && s.length() == 0) return null;
 
@@ -469,13 +469,13 @@ public final class GsmMmiCode extends Handler implements MmiCode {
     }
 
     /** returns true of the string is empty or null */
-    private static boolean
+    protected static boolean
     isEmptyOrNull(CharSequence s) {
         return s == null || (s.length() == 0);
     }
 
 
-    private static int
+    protected static int
     scToCallForwardReason(String sc) {
         if (sc == null) {
             throw new RuntimeException ("invalid call forward sc");
@@ -537,7 +537,7 @@ public final class GsmMmiCode extends Handler implements MmiCode {
         }
     }
 
-    private static int
+    protected static int
     siToTime (String si) {
         if (si == null || si.length() == 0) {
             return 0;
@@ -547,7 +547,7 @@ public final class GsmMmiCode extends Handler implements MmiCode {
         }
     }
 
-    static boolean
+    protected static boolean
     isServiceCodeCallForwarding(String sc) {
         return sc != null &&
                 (sc.equals(SC_CFU)
@@ -556,7 +556,7 @@ public final class GsmMmiCode extends Handler implements MmiCode {
                 || sc.equals(SC_CF_All_Conditional));
     }
 
-    static boolean
+    protected static boolean
     isServiceCodeCallBarring(String sc) {
         Resources resource = Resources.getSystem();
         if (sc != null) {
@@ -571,7 +571,7 @@ public final class GsmMmiCode extends Handler implements MmiCode {
         return false;
     }
 
-    static String
+    protected static String
     scToBarringFacility(String sc) {
         if (sc == null) {
             throw new RuntimeException ("invalid call barring sc");
@@ -672,13 +672,13 @@ public final class GsmMmiCode extends Handler implements MmiCode {
     //***** Instance Methods
 
     /** Does this dial string contain a structured or unstructured MMI code? */
-    boolean
+    protected boolean
     isMMI() {
         return mPoundString != null;
     }
 
     /* Is this a 1 or 2 digit "short code" as defined in TS 22.030 sec 6.5.3.2? */
-    boolean
+    protected boolean
     isShortCode() {
         return mPoundString == null
                     && mDialingNumber != null && mDialingNumber.length() <= 2;
@@ -690,7 +690,7 @@ public final class GsmMmiCode extends Handler implements MmiCode {
         return mPoundString;
     }
 
-    static private boolean
+    static protected boolean
     isTwoDigitShortCode(Context context, String dialString) {
         Rlog.d(LOG_TAG, "isTwoDigitShortCode");
 
@@ -717,7 +717,7 @@ public final class GsmMmiCode extends Handler implements MmiCode {
      * to be a short code AND conditions are correct for it to be treated as
      * such.
      */
-    static private boolean isShortCode(String dialString, GsmCdmaPhone phone) {
+    static protected boolean isShortCode(String dialString, GsmCdmaPhone phone) {
         // Refer to TS 22.030 Figure 3.5.3.2:
         if (dialString == null) {
             return false;
@@ -753,7 +753,7 @@ public final class GsmMmiCode extends Handler implements MmiCode {
      *
      * The phone shall initiate a USSD/SS commands.
      */
-    static private boolean isShortCodeUSSD(String dialString, GsmCdmaPhone phone) {
+    static protected boolean isShortCodeUSSD(String dialString, GsmCdmaPhone phone) {
         if (dialString != null && dialString.length() <= MAX_LENGTH_SHORT_CODE) {
             if (phone.isInCall()) {
                 return true;
@@ -811,7 +811,7 @@ public final class GsmMmiCode extends Handler implements MmiCode {
      * FAC stands for feature access code and it is special patterns of characters
      * to invoke certain features.
      */
-    private boolean isFacToDial() {
+    protected boolean isFacToDial() {
         CarrierConfigManager configManager = (CarrierConfigManager)
                 mPhone.getContext().getSystemService(Context.CARRIER_CONFIG_SERVICE);
         PersistableBundle b = configManager.getConfigForSubId(mPhone.getSubId());
@@ -829,23 +829,23 @@ public final class GsmMmiCode extends Handler implements MmiCode {
         return false;
     }
 
-    boolean isActivate() {
+    protected boolean isActivate() {
         return mAction != null && mAction.equals(ACTION_ACTIVATE);
     }
 
-    boolean isDeactivate() {
+    protected boolean isDeactivate() {
         return mAction != null && mAction.equals(ACTION_DEACTIVATE);
     }
 
-    boolean isInterrogate() {
+    protected boolean isInterrogate() {
         return mAction != null && mAction.equals(ACTION_INTERROGATE);
     }
 
-    boolean isRegister() {
+    protected boolean isRegister() {
         return mAction != null && mAction.equals(ACTION_REGISTER);
     }
 
-    boolean isErasure() {
+    protected boolean isErasure() {
         return mAction != null && mAction.equals(ACTION_ERASURE);
     }
 
@@ -1077,7 +1077,7 @@ public final class GsmMmiCode extends Handler implements MmiCode {
         }
     }
 
-    private void handlePasswordError(int res) {
+    protected void handlePasswordError(int res) {
         mState = State.FAILED;
         StringBuilder sb = new StringBuilder(getScString());
         sb.append("\n");
@@ -1230,7 +1230,7 @@ public final class GsmMmiCode extends Handler implements MmiCode {
     }
     //***** Private instance methods
 
-    private CharSequence getErrorMessage(AsyncResult ar) {
+    protected CharSequence getErrorMessage(AsyncResult ar) {
 
         if (ar.exception instanceof CommandException) {
             CommandException.Error err = ((CommandException)(ar.exception)).getCommandError();
@@ -1264,7 +1264,7 @@ public final class GsmMmiCode extends Handler implements MmiCode {
         return mContext.getText(com.android.internal.R.string.mmiError);
     }
 
-    private CharSequence getScString() {
+    protected CharSequence getScString() {
         if (mSc != null) {
             if (isServiceCodeCallBarring(mSc)) {
                 return mContext.getText(com.android.internal.R.string.BaMmi);
@@ -1286,7 +1286,7 @@ public final class GsmMmiCode extends Handler implements MmiCode {
         return "";
     }
 
-    private void
+    protected void
     onSetComplete(Message msg, AsyncResult ar){
         StringBuilder sb = new StringBuilder(getScString());
         sb.append("\n");
@@ -1393,7 +1393,7 @@ public final class GsmMmiCode extends Handler implements MmiCode {
         mPhone.onMMIDone(this);
     }
 
-    private void
+    protected void
     onGetClirComplete(AsyncResult ar) {
         StringBuilder sb = new StringBuilder(getScString());
         sb.append("\n");
@@ -1481,7 +1481,7 @@ public final class GsmMmiCode extends Handler implements MmiCode {
      *        Returns null if unrecognized
      */
 
-    private CharSequence
+    protected CharSequence
     serviceClassToCFString (int serviceClass) {
         switch (serviceClass) {
             case SERVICE_CLASS_VOICE:
@@ -1507,7 +1507,7 @@ public final class GsmMmiCode extends Handler implements MmiCode {
 
 
     /** one CallForwardInfo + serviceClassMask -> one line of text */
-    private CharSequence
+    protected CharSequence
     makeCFQueryResultMessage(CallForwardInfo info, int serviceClassMask) {
         CharSequence template;
         String sources[] = {"{0}", "{1}", "{2}"};
@@ -1569,12 +1569,12 @@ public final class GsmMmiCode extends Handler implements MmiCode {
     /**
      * Used to format a string that should be displayed as LTR even in RTL locales
      */
-    private String formatLtr(String str) {
+    protected String formatLtr(String str) {
         BidiFormatter fmt = BidiFormatter.getInstance();
         return str == null ? str : fmt.unicodeWrap(str, TextDirectionHeuristics.LTR, true);
     }
 
-    private void
+    protected void
     onQueryCfComplete(AsyncResult ar) {
         StringBuilder sb = new StringBuilder(getScString());
         sb.append("\n");
@@ -1629,7 +1629,7 @@ public final class GsmMmiCode extends Handler implements MmiCode {
 
     }
 
-    private void
+    protected void
     onQueryComplete(AsyncResult ar) {
         StringBuilder sb = new StringBuilder(getScString());
         sb.append("\n");
@@ -1666,7 +1666,7 @@ public final class GsmMmiCode extends Handler implements MmiCode {
         mPhone.onMMIDone(this);
     }
 
-    private CharSequence
+    protected CharSequence
     createQueryCallWaitingResultMessage(int serviceClass) {
         StringBuilder sb =
                 new StringBuilder(mContext.getText(com.android.internal.R.string.serviceEnabledFor));
@@ -1682,7 +1682,7 @@ public final class GsmMmiCode extends Handler implements MmiCode {
         }
         return sb;
     }
-    private CharSequence
+    protected CharSequence
     createQueryCallBarringResultMessage(int serviceClass)
     {
         StringBuilder sb = new StringBuilder(mContext.getText(com.android.internal.R.string.serviceEnabledFor));

@@ -38,13 +38,25 @@ public class GsmCellBroadcastHandler extends CellBroadcastHandler {
     private static final boolean VDBG = false;  // log CB PDU data
 
     /** This map holds incomplete concatenated messages waiting for assembly. */
-    private final HashMap<SmsCbConcatInfo, byte[][]> mSmsCbPageMap =
+    // MTK-START
+    // Modification for sub class
+    protected final HashMap<SmsCbConcatInfo, byte[][]> mSmsCbPageMap =
             new HashMap<SmsCbConcatInfo, byte[][]>(4);
+    // MTK-END
 
     protected GsmCellBroadcastHandler(Context context, Phone phone) {
         super("GsmCellBroadcastHandler", context, phone);
         phone.mCi.setOnNewGsmBroadcastSms(getHandler(), EVENT_NEW_SMS_MESSAGE, null);
     }
+
+    // MTK-START
+    // Add dummy constructor for sub class
+    protected GsmCellBroadcastHandler(String debugTag, Context context, Phone phone,
+            Object dummy) {
+        super(debugTag, context, phone, dummy);
+        phone.mCi.setOnNewGsmBroadcastSms(getHandler(), EVENT_NEW_SMS_MESSAGE, null);
+    }
+    // MTK-END
 
     @Override
     protected void onQuitting() {
@@ -87,7 +99,10 @@ public class GsmCellBroadcastHandler extends CellBroadcastHandler {
      * Handle 3GPP format SMS-CB message.
      * @param ar the AsyncResult containing the received PDUs
      */
-    private SmsCbMessage handleGsmBroadcastSms(AsyncResult ar) {
+    // MTK-START
+    // Modification for sub class
+    protected SmsCbMessage handleGsmBroadcastSms(AsyncResult ar) {
+    // MTK-END
         try {
             byte[] receivedPdu = (byte[]) ar.result;
 
@@ -200,12 +215,18 @@ public class GsmCellBroadcastHandler extends CellBroadcastHandler {
     /**
      * Holds all info about a message page needed to assemble a complete concatenated message.
      */
-    private static final class SmsCbConcatInfo {
+    // MTK-START
+    // Modification for sub class
+    protected static final class SmsCbConcatInfo {
+    // MTK-END
 
         private final SmsCbHeader mHeader;
         private final SmsCbLocation mLocation;
 
-        SmsCbConcatInfo(SmsCbHeader header, SmsCbLocation location) {
+        // MTK-START
+        // Modification for sub class
+        public SmsCbConcatInfo(SmsCbHeader header, SmsCbLocation location) {
+        // MTK-END
             mHeader = header;
             mLocation = location;
         }
@@ -224,7 +245,14 @@ public class GsmCellBroadcastHandler extends CellBroadcastHandler {
                 // geographical scope and update number), and both pages belong to the same
                 // location (PLMN, plus LAC and CID if these are part of the geographical scope).
                 return mHeader.getSerialNumber() == other.mHeader.getSerialNumber()
-                        && mLocation.equals(other.mLocation);
+                        && mLocation.equals(other.mLocation)
+                        // MTK-START
+                        /**
+                        * If channel, service category, is different, these two cell broadcast
+                        * messages should not be treated as the same concatenated messages.
+                        */
+                        && mHeader.getServiceCategory() == other.mHeader.getServiceCategory();
+                        // MTK-END
             }
 
             return false;

@@ -113,7 +113,7 @@ public class GsmCdmaCall extends Call {
         }
     }
 
-    /*package*/ boolean update (GsmCdmaConnection conn, DriverCall dc) {
+    /*package*/ public boolean update (GsmCdmaConnection conn, DriverCall dc) {
         State newState;
         boolean changed = false;
 
@@ -143,7 +143,7 @@ public class GsmCdmaCall extends Call {
      * Note that at this point, the hangup request has been dispatched to the radio
      * but no response has yet been received so update() has not yet been called
      */
-    void onHangupLocal() {
+    public void onHangupLocal() {
         for (int i = 0, s = mConnections.size(); i < s; i++) {
             GsmCdmaConnection cn = (GsmCdmaConnection)mConnections.get(i);
 

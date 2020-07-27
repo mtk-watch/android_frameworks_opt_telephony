@@ -23,7 +23,8 @@ public class GenericPdu {
     /**
      * The headers of pdu.
      */
-    PduHeaders mPduHeaders = null;
+    /*MTK Change access type*/
+    protected PduHeaders mPduHeaders = null;
 
     /**
      * Constructor.
@@ -32,21 +33,23 @@ public class GenericPdu {
         mPduHeaders = new PduHeaders();
     }
 
+    /* MTK Change access type */
     /**
      * Constructor.
      *
      * @param headers Headers for this PDU.
      */
-    GenericPdu(PduHeaders headers) {
+    public GenericPdu(PduHeaders headers) {
         mPduHeaders = headers;
     }
 
+    /*MTK Change access type*/
     /**
      * Get the headers of this PDU.
      *
      * @return A PduHeaders of this PDU.
      */
-    PduHeaders getPduHeaders() {
+    public PduHeaders getPduHeaders() {
         return mPduHeaders;
     }
 

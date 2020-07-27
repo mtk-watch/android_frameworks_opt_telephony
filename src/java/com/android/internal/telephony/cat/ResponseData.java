@@ -29,7 +29,9 @@ import android.annotation.UnsupportedAppUsage;
 import java.io.ByteArrayOutputStream;
 import java.io.UnsupportedEncodingException;
 
-abstract class ResponseData {
+// MTK-START
+public abstract class ResponseData {
+// MTK-END
     /**
      * Format the data appropriate for TERMINAL RESPONSE and write it into
      * the ByteArrayOutputStream object.

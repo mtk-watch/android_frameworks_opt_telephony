@@ -51,10 +51,11 @@ public class IccPhoneBookInterfaceManager {
     protected static final int EVENT_GET_SIZE_DONE = 1;
     protected static final int EVENT_LOAD_DONE = 2;
     protected static final int EVENT_UPDATE_DONE = 3;
-
-    private static final class Request {
-        AtomicBoolean mStatus = new AtomicBoolean(false);
-        Object mResult = null;
+    // MTK-START: add on
+    public static final class Request {
+        public AtomicBoolean mStatus = new AtomicBoolean(false);
+        public Object mResult = null;
+    // MTK-END
     }
 
     @UnsupportedAppUsage
@@ -330,8 +331,9 @@ public class IccPhoneBookInterfaceManager {
         }
     }
 
+    // M: Revise for add-on (protected)
     @UnsupportedAppUsage
-    private int updateEfForIccType(int efid) {
+    protected int updateEfForIccType(int efid) {
         // Check if we are trying to read ADN records
         if (efid == IccConstants.EF_ADN) {
             if (mPhone.getCurrentUiccAppType() == AppType.APPTYPE_USIM) {

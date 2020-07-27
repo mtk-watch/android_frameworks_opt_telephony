@@ -56,7 +56,7 @@ public class CdmaInboundSmsHandler extends InboundSmsHandler {
     /**
      * Create a new inbound SMS handler for CDMA.
      */
-    private CdmaInboundSmsHandler(Context context, SmsStorageMonitor storageMonitor,
+    public CdmaInboundSmsHandler(Context context, SmsStorageMonitor storageMonitor,
             Phone phone, CdmaSMSDispatcher smsDispatcher) {
         super("CdmaInboundSmsHandler", context, storageMonitor, phone,
                 CellBroadcastHandler.makeCellBroadcastHandler(context, phone));
@@ -83,8 +83,15 @@ public class CdmaInboundSmsHandler extends InboundSmsHandler {
      */
     public static CdmaInboundSmsHandler makeInboundSmsHandler(Context context,
             SmsStorageMonitor storageMonitor, Phone phone, CdmaSMSDispatcher smsDispatcher) {
+        // MTK-START, anchor code to create the mediatek extension
+        /*
         CdmaInboundSmsHandler handler = new CdmaInboundSmsHandler(context, storageMonitor,
                 phone, smsDispatcher);
+        */
+        CdmaInboundSmsHandler handler = TelephonyComponentFactory.getInstance().
+                inject(CdmaInboundSmsHandler.class.getName()).
+                makeCdmaInboundSmsHandler(context, storageMonitor, phone, smsDispatcher);
+        // MTK-END
         handler.start();
         return handler;
     }

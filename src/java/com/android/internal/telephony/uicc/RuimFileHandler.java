@@ -24,7 +24,9 @@ import com.android.internal.telephony.CommandsInterface;
 /**
  * {@hide}
  */
-public final class RuimFileHandler extends IccFileHandler {
+// MTK START: add-on
+public /*final*/ class RuimFileHandler extends IccFileHandler {
+// MTK END
     static final String LOG_TAG = "RuimFH";
 
     //***** Instance Variables

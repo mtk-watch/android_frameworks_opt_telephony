@@ -33,12 +33,13 @@ public class ReadOrigInd extends GenericPdu {
         setMessageType(PduHeaders.MESSAGE_TYPE_READ_ORIG_IND);
     }
 
+    /*MTK Change access type*/
     /**
      * Constructor with given headers.
      *
      * @param headers Headers for this PDU.
      */
-    ReadOrigInd(PduHeaders headers) {
+    public ReadOrigInd(PduHeaders headers) {
         super(headers);
     }
 

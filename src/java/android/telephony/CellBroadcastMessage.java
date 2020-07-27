@@ -22,8 +22,15 @@ import android.content.Context;
 import android.database.Cursor;
 import android.os.Parcel;
 import android.os.Parcelable;
+// MTK-START: Revise for telephony add on
+import android.os.SystemProperties;
+// MTK_END
 import android.provider.Telephony;
 import android.text.format.DateUtils;
+
+// MTK-START: Revise for telephony add on
+import java.lang.reflect.Constructor;
+// MTK_END
 
 /**
  * Application wrapper for {@link SmsCbMessage}. This is Parcelable so that
@@ -45,17 +52,23 @@ public class CellBroadcastMessage implements Parcelable {
             "com.android.cellbroadcastreceiver.SMS_CB_MESSAGE";
 
     /** SmsCbMessage. */
-    private final SmsCbMessage mSmsCbMessage;
+    // MTK-START
+    // Modification for sub class
+    public SmsCbMessage mSmsCbMessage;
 
-    private final long mDeliveryTime;
-    private boolean mIsRead;
+    protected long mDeliveryTime;
+    protected boolean mIsRead;
 
     /**
      * Indicates the subId
      *
      * @hide
      */
-    private int mSubId = 0;
+    protected int mSubId = 0;
+
+    // Add dummy constructor for sub class
+    public CellBroadcastMessage() {};
+    // MTK-END
 
     /**
      * set Subscription information
@@ -231,9 +244,14 @@ public class CellBroadcastMessage implements Parcelable {
             } else {
                 certainty = SmsCbCmasInfo.CMAS_CERTAINTY_UNKNOWN;
             }
-
+            // MTK-START: Revise for telephony add on
+            /*
             cmasInfo = new SmsCbCmasInfo(messageClass, cmasCategory, responseType, severity,
                     urgency, certainty);
+            */
+            cmasInfo = makeSmsCbCmasInfo(messageClass, cmasCategory, responseType, severity,
+                    urgency, certainty);
+            // MTK-END
         } else {
             cmasInfo = null;
         }
@@ -449,4 +467,27 @@ public class CellBroadcastMessage implements Parcelable {
         int flags = DateUtils.FORMAT_SHOW_TIME | DateUtils.FORMAT_SHOW_DATE;
         return DateUtils.formatDateTime(context, mDeliveryTime, flags);
     }
+
+    // MTK-START: Revise for telephony add on
+    private static SmsCbCmasInfo makeSmsCbCmasInfo(int messageClass, int category, int responseType,
+            int severity, int urgency, int certainty) {
+        if (SystemProperties.get("ro.vendor.mtk_telephony_add_on_policy", "0").equals("0")) {
+            try {
+                String className = "mediatek.telephony.MtkSmsCbCmasInfo";
+                Class<?> clazz = Class.forName(className);
+                Class classes[] = {int.class, int.class,
+                        int.class, int.class, int.class, int.class, long.class};
+                Constructor clazzConstructfunc = clazz.getConstructor(classes);
+                return (SmsCbCmasInfo) clazzConstructfunc.newInstance(messageClass, category,
+                        responseType, severity, urgency, certainty, 0L);
+            } catch (Exception e) {
+                return new SmsCbCmasInfo(messageClass, category, responseType,
+                        severity, urgency, certainty);
+            }
+        } else {
+            return new SmsCbCmasInfo(messageClass, category, responseType,
+                    severity, urgency, certainty);
+        }
+    }
+    // MTK-END
 }

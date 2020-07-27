@@ -36,22 +36,24 @@ public class RetrieveConf extends MultimediaMessagePdu {
         setMessageType(PduHeaders.MESSAGE_TYPE_RETRIEVE_CONF);
     }
 
+    /*MTK Change access type*/
     /**
      * Constructor with given headers.
      *
      * @param headers Headers for this PDU.
      */
-    RetrieveConf(PduHeaders headers) {
+    public RetrieveConf(PduHeaders headers) {
         super(headers);
     }
 
+    /*MTK Change access type*/
     /**
      * Constructor with given headers and body
      *
      * @param headers Headers for this PDU.
      * @param body Body of this PDu.
      */
-    RetrieveConf(PduHeaders headers, PduBody body) {
+    public RetrieveConf(PduHeaders headers, PduBody body) {
         super(headers, body);
     }
 

@@ -43,31 +43,40 @@ public class SmsStorageMonitor extends Handler {
     private static final int EVENT_ICC_FULL = 1;
 
     /** Memory status reporting is acknowledged by RIL */
-    private static final int EVENT_REPORT_MEMORY_STATUS_DONE = 2;
+    // MTK-START
+    // Modification for sub class
+    protected static final int EVENT_REPORT_MEMORY_STATUS_DONE = 2;
+    // MTK-END
 
     /** Radio is ON */
-    private static final int EVENT_RADIO_ON = 3;
+    // MTK-START
+    // Modification for sub class
+    protected static final int EVENT_RADIO_ON = 3;
 
     /** Context from phone object passed to constructor. */
-    private final Context mContext;
+    protected final Context mContext;
 
     /** Wake lock to ensure device stays awake while dispatching the SMS intent. */
-    private PowerManager.WakeLock mWakeLock;
+    protected PowerManager.WakeLock mWakeLock;
+    // MTK-END
 
     private boolean mReportMemoryStatusPending;
 
+    // MTK-START
+    // Modification for sub class
     /** it is use to put in to extra value for SIM_FULL_ACTION and SMS_REJECTED_ACTION */
-    Phone mPhone;
+    protected Phone mPhone;
 
     @UnsupportedAppUsage
-    final CommandsInterface mCi;                            // accessed from inner class
-    boolean mStorageAvailable = true;                       // accessed from inner class
+    protected final CommandsInterface mCi;                            // accessed from inner class
+    protected boolean mStorageAvailable = true;                       // accessed from inner class
 
     /**
      * Hold the wake lock for 5 seconds, which should be enough time for
      * any receiver(s) to grab its own wake lock.
      */
-    private static final int WAKE_LOCK_TIMEOUT = 5000;
+    protected static final int WAKE_LOCK_TIMEOUT = 5000;
+    // MTK-END
 
     /**
      * Creates an SmsStorageMonitor and registers for events.
@@ -142,7 +151,9 @@ public class SmsStorageMonitor extends Handler {
      * Called when SIM_FULL message is received from the RIL. Notifies the default SMS application
      * that SIM storage for SMS messages is full.
      */
-    private void handleIccFull() {
+    // MTK-START
+    public void handleIccFull() {
+    // MTK-END
         // broadcast SIM_FULL intent
         Intent intent = new Intent(Intents.SIM_FULL_ACTION);
         intent.setComponent(SmsApplication.getDefaultSimFullApplication(mContext, false));

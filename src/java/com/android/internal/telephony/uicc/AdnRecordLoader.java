@@ -29,48 +29,51 @@ import com.android.internal.telephony.uicc.IccConstants;
 
 public class AdnRecordLoader extends Handler {
     final static String LOG_TAG = "AdnRecordLoader";
-    final static boolean VDBG = false;
+    // M: Revise for add-on (protected)
+    protected final static boolean VDBG = false;
 
     //***** Instance Variables
 
     @UnsupportedAppUsage
-    private IccFileHandler mFh;
-    int mEf;
-    int mExtensionEF;
-    int mPendingExtLoads;
-    Message mUserResponse;
-    String mPin2;
+    protected IccFileHandler mFh;
+    protected int mEf;
+    protected int mExtensionEF;
+    protected int mPendingExtLoads;
+    protected Message mUserResponse;
+    protected String mPin2;
 
     // For "load one"
-    int mRecordNumber;
+    protected int mRecordNumber;
 
     // for "load all"
-    ArrayList<AdnRecord> mAdns; // only valid after EVENT_ADN_LOAD_ALL_DONE
+    protected ArrayList<AdnRecord> mAdns; // only valid after EVENT_ADN_LOAD_ALL_DONE
 
     // Either an AdnRecord or a reference to adns depending
     // if this is a load one or load all operation
-    Object mResult;
+    protected Object mResult;
 
     //***** Event Constants
 
-    static final int EVENT_ADN_LOAD_DONE = 1;
-    static final int EVENT_EXT_RECORD_LOAD_DONE = 2;
-    static final int EVENT_ADN_LOAD_ALL_DONE = 3;
-    static final int EVENT_EF_LINEAR_RECORD_SIZE_DONE = 4;
-    static final int EVENT_UPDATE_RECORD_DONE = 5;
+    protected static final int EVENT_ADN_LOAD_DONE = 1;
+    protected static final int EVENT_EXT_RECORD_LOAD_DONE = 2;
+    protected static final int EVENT_ADN_LOAD_ALL_DONE = 3;
+    protected static final int EVENT_EF_LINEAR_RECORD_SIZE_DONE = 4;
+    protected static final int EVENT_UPDATE_RECORD_DONE = 5;
 
     //***** Constructor
 
+    // M: Revise for add-on (public)
     @UnsupportedAppUsage
-    AdnRecordLoader(IccFileHandler fh) {
+    public AdnRecordLoader(IccFileHandler fh) {
         // The telephony unit-test cases may create AdnRecords
         // in secondary threads
         super(Looper.getMainLooper());
         mFh = fh;
     }
 
+    // M: Revise for add-on (protected)
     @UnsupportedAppUsage
-    private String getEFPath(int efid) {
+    protected String getEFPath(int efid) {
         if (efid == IccConstants.EF_ADN) {
             return IccConstants.MF_SIM + IccConstants.DF_TELECOM;
         }

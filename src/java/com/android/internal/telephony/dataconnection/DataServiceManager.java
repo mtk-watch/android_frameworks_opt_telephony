@@ -64,7 +64,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class DataServiceManager extends Handler {
     private static final boolean DBG = true;
 
-    static final String DATA_CALL_RESPONSE = "data_call_response";
+    public static final String DATA_CALL_RESPONSE = "data_call_response";
 
     private static final int EVENT_BIND_DATA_SERVICE = 1;
 
@@ -93,6 +93,8 @@ public class DataServiceManager extends Handler {
     private String mTargetBindingPackageName;
 
     private CellularDataServiceConnection mServiceConnection;
+
+    private String mIwlanDataServiceClassName;
 
     private final BroadcastReceiver mBroadcastReceiver = new BroadcastReceiver() {
         @Override
@@ -285,10 +287,20 @@ public class DataServiceManager extends Handler {
     }
 
     private void bindDataService() {
+        Intent intent = null;
         String packageName = getDataServicePackageName();
+        String className = getDataServiceClassName();
         if (TextUtils.isEmpty(packageName)) {
             loge("Can't find the binding package");
             return;
+        }
+
+        if (TextUtils.isEmpty(className)) {
+            intent = new Intent(DataService.SERVICE_INTERFACE);
+            intent.setPackage(packageName);
+        } else {
+            ComponentName cm = new ComponentName(packageName, className);
+            intent = new Intent(DataService.SERVICE_INTERFACE).setComponent(cm);
         }
 
         if (TextUtils.equals(packageName, mTargetBindingPackageName)) {
@@ -316,9 +328,7 @@ public class DataServiceManager extends Handler {
         try {
             mServiceConnection = new CellularDataServiceConnection();
             if (!mPhone.getContext().bindService(
-                    new Intent(DataService.SERVICE_INTERFACE).setPackage(packageName),
-                    mServiceConnection,
-                    Context.BIND_AUTO_CREATE)) {
+                    intent, mServiceConnection, Context.BIND_AUTO_CREATE)) {
                 loge("Cannot bind to the data service.");
                 return;
             }
@@ -397,6 +407,60 @@ public class DataServiceManager extends Handler {
         }
 
         return packageName;
+    }
+
+    /**
+     * Get the data service class name for our current transport type.
+     *
+     * @return class name of the data service package for the the current transportType.
+     */
+    private String getDataServiceClassName() {
+        return getDataServiceClassName(mTransportType);
+    }
+
+
+    /**
+     * Get the data service class by transport type.
+     *
+     * @param transportType either WWAN or WLAN
+     * @return class name of the data service package for the specified transportType.
+     */
+    private String getDataServiceClassName(int transportType) {
+        String className = null;
+        int resourceId;
+        String carrierConfig = null;
+        switch (transportType) {
+            case AccessNetworkConstants.TRANSPORT_TYPE_WWAN:
+                //resourceId = com.android.internal.R.string.config_wwan_data_service_class;
+                //carrierConfig = CarrierConfigManager
+                //        .KEY_CARRIER_DATA_SERVICE_WWAN_CLASS_OVERRIDE_STRING;
+                break;
+            case AccessNetworkConstants.TRANSPORT_TYPE_WLAN:
+                //resourceId = com.android.internal.R.string.config_wlan_data_service_class;
+                //carrierConfig = CarrierConfigManager
+                //        .KEY_CARRIER_DATA_SERVICE_WLAN_CLASS_OVERRIDE_STRING;
+
+                // M: Since add resource string will change resource id,
+                //    using add-on funciton to assign class name of iwlan data service instead
+                //    of add resource string.
+                className = mIwlanDataServiceClassName;
+                break;
+            default:
+                throw new IllegalStateException("Transport type not WWAN or WLAN. type="
+                        + transportType);
+        }
+
+        // Read package name from resource overlay
+        //className = mPhone.getContext().getResources().getString(resourceId);
+
+        PersistableBundle b = mCarrierConfigManager.getConfigForSubId(mPhone.getSubId());
+
+        if (b != null && !TextUtils.isEmpty(b.getString(carrierConfig))) {
+            // If carrier config overrides it, use the one from carrier config
+            className = b.getString(carrierConfig, className);
+        }
+
+        return className;
     }
 
     private void sendCompleteMessage(Message msg, int code) {
@@ -636,6 +700,16 @@ public class DataServiceManager extends Handler {
 
     private void loge(String s) {
         Rlog.e(mTag, s);
+    }
+
+    /**
+     * Anchor method for set class name of IwlanDataService to IWLAN-AP-assisted moode
+     *
+     * @param iwlanDataServiceClass : class name of iwlan data service
+     */
+    public void setIwlanDataServiceClassName(String iwlanDataServiceClass) {
+        log("setIwlanDataServiceClassName:" + iwlanDataServiceClass);
+        mIwlanDataServiceClassName = iwlanDataServiceClass;
     }
 
 }

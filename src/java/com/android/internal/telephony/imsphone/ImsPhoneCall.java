@@ -42,8 +42,8 @@ public class ImsPhoneCall extends Call {
     // This flag is meant to be used as a debugging tool to quickly see all logs
     // regardless of the actual log level set on this component.
     private static final boolean FORCE_DEBUG = false; /* STOPSHIP if true */
-    private static final boolean DBG = FORCE_DEBUG || Rlog.isLoggable(LOG_TAG, Log.DEBUG);
-    private static final boolean VDBG = FORCE_DEBUG || Rlog.isLoggable(LOG_TAG, Log.VERBOSE);
+    protected static final boolean DBG = FORCE_DEBUG || Rlog.isLoggable(LOG_TAG, Log.DEBUG);
+    protected static final boolean VDBG = FORCE_DEBUG || Rlog.isLoggable(LOG_TAG, Log.VERBOSE);
 
     /*************************** Instance Variables **************************/
     public static final String CONTEXT_UNKNOWN = "UK";
@@ -52,18 +52,18 @@ public class ImsPhoneCall extends Call {
     public static final String CONTEXT_BACKGROUND = "BG";
     public static final String CONTEXT_HANDOVER = "HO";
 
-    /*package*/ ImsPhoneCallTracker mOwner;
+    /*package*/ protected ImsPhoneCallTracker mOwner;
 
-    private boolean mIsRingbackTonePlaying = false;
+    protected boolean mIsRingbackTonePlaying = false;
 
     // Determines what type of ImsPhoneCall this is.  ImsPhoneCallTracker uses instances of
     // ImsPhoneCall to for fg, bg, etc calls.  This is used as a convenience for logging so that it
     // can be made clear whether a call being logged is the foreground, background, etc.
-    private final String mCallContext;
+    protected final String mCallContext;
 
     /****************************** Constructors *****************************/
     /*package*/
-    ImsPhoneCall() {
+    protected ImsPhoneCall() {
         mCallContext = CONTEXT_UNKNOWN;
     }
 
@@ -231,7 +231,7 @@ public class ImsPhoneCall extends Call {
      * Called when this Call is being hung up locally (eg, user pressed "end")
      */
     @UnsupportedAppUsage
-    void
+    public void
     onHangupLocal() {
         for (int i = 0, s = mConnections.size(); i < s; i++) {
             ImsPhoneConnection cn = (ImsPhoneConnection)mConnections.get(i);
@@ -264,7 +264,7 @@ public class ImsPhoneCall extends Call {
     }
 
     @UnsupportedAppUsage
-    /* package */ void
+    /* package */ public void
     merge(ImsPhoneCall that, State state) {
         // This call is the conference host and the "that" call is the one being merged in.
         // Set the connect time for the conference; this will have been determined when the
@@ -302,7 +302,7 @@ public class ImsPhoneCall extends Call {
         return (getFirstConnection() == null) ? null : getFirstConnection().getImsCall();
     }
 
-    /*package*/ static boolean isLocalTone(ImsCall imsCall) {
+    /*package*/ public static boolean isLocalTone(ImsCall imsCall) {
         if ((imsCall == null) || (imsCall.getCallProfile() == null)
                 || (imsCall.getCallProfile().mMediaProfile == null)) {
             return false;
@@ -359,7 +359,10 @@ public class ImsPhoneCall extends Call {
             Rlog.v(LOG_TAG, "switchWith : switchCall = " + this + " withCall = " + that);
         }
         synchronized (ImsPhoneCall.class) {
-            ImsPhoneCall tmp = new ImsPhoneCall();
+            /// M: Telephony add-on @{
+            //ImsPhoneCall tmp = new ImsPhoneCall();
+            ImsPhoneCall tmp = makeTempImsPhoneCall();
+            /// @}
             tmp.takeOver(this);
             this.takeOver(that);
             that.takeOver(tmp);
@@ -384,4 +387,9 @@ public class ImsPhoneCall extends Call {
             ((ImsPhoneConnection) c).changeParent(this);
         }
     }
+
+    protected ImsPhoneCall makeTempImsPhoneCall() {
+        return new ImsPhoneCall();
+    }
+    /// @}
 }

@@ -113,8 +113,78 @@ public interface AppInterface {
         @UnsupportedAppUsage
         SEND_DATA(0x43),
         @UnsupportedAppUsage
-        GET_CHANNEL_STATUS(0x44);
-
+        GET_CHANNEL_STATUS(0x44),
+        // MTK-START
+        /* Add all proactive type for extend */
+        /**
+         * Proactive command MORE_TIME.
+         */
+        MORE_TIME(0x02),
+        /**
+         * Proactive command POLL_INTERVAL.
+         */
+        POLL_INTERVAL(0x03),
+        /**
+         * Proactive command POLLING_OFF.
+         */
+        POLLING_OFF(0x04),
+        /**
+         * Proactive command TIMER_MANAGEMENT.
+         */
+        TIMER_MANAGEMENT(0x27),
+        /**
+         * Proactive command PERFORM_CARD_APDU.
+         */
+        PERFORM_CARD_APDU(0x30),
+        /**
+         * Proactive command POWER_ON_CARD.
+         */
+        POWER_ON_CARD(0x31),
+        /**
+         * Proactive command POWER_OFF_CARD.
+         */
+        POWER_OFF_CARD(0x32),
+        /**
+         * Proactive command GET_READER_STATUS.
+         */
+        GET_READER_STATUS(0x33),
+        /**
+         * Proactive command SERVICE_SEARCH.
+         */
+        SERVICE_SEARCH(0x45),
+        /**
+         * Proactive command GET_SERVICE_INFORMATION.
+         */
+        GET_SERVICE_INFORMATION(0x46),
+        /**
+         * Proactive command DECLARE_SERVICE.
+         */
+        DECLARE_SERVICE(0x47),
+        /**
+         * Proactive command SET_FRAME.
+         */
+        SET_FRAME(0x50),
+        /**
+         * Proactive command GET_FRAME_STATUS.
+         */
+        GET_FRAME_STATUS(0x51),
+        /**
+         * Proactive command RETRIEVE_MULTIMEDIA_MESSAGE.
+         */
+        RETRIEVE_MULTIMEDIA_MESSAGE(0x60),
+        /**
+         * Proactive command SUBMIT_MULTIMEDIA_MESSAGE.
+         */
+        SUBMIT_MULTIMEDIA_MESSAGE(0x61),
+        /**
+         * Proactive command DISPLAY_MULTIMEDIA_MESSAGE.
+         */
+        DISPLAY_MULTIMEDIA_MESSAGE(0x62),
+        /**
+         * Proactive command ACTIVATE.
+         */
+        ACTIVATE(0x70);
+        // MTK-END
         private int mValue;
 
         CommandType(int value) {

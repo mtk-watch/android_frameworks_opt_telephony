@@ -25,9 +25,11 @@ import android.annotation.UnsupportedAppUsage;
  * {@hide}
  */
 public class ResultException extends CatException {
-    private ResultCode mResult;
-    private int mAdditionalInfo;
-    private String mExplanation;
+     // MTK-START
+     protected /*private*/ ResultCode mResult;
+     protected /*private*/ int mAdditionalInfo;
+     protected /*private*/ String mExplanation;
+     // MTK-END
 
     @UnsupportedAppUsage
     public ResultException(ResultCode result) {

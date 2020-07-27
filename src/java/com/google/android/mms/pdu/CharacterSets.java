@@ -116,8 +116,10 @@ public class CharacterSets {
         MIMENAME_UTF_16,
     };
 
-    private static final HashMap<Integer, String> MIBENUM_TO_NAME_MAP;
-    private static final HashMap<String, Integer> NAME_TO_MIBENUM_MAP;
+    /*MTK Change access type*/
+    protected static final HashMap<Integer, String> MIBENUM_TO_NAME_MAP;
+    /*MTK Change access type*/
+    protected static final HashMap<String, Integer> NAME_TO_MIBENUM_MAP;
 
     static {
         // Create the HashMaps.
@@ -131,7 +133,8 @@ public class CharacterSets {
         }
     }
 
-    private CharacterSets() {} // Non-instantiatable
+    /*MTK Change access type*/
+    protected CharacterSets() {} // Non-instantiatable
 
     /**
      * Map an MIBEnum number to the name of the charset which this number

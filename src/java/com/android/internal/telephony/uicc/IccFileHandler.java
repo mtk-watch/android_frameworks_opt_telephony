@@ -95,9 +95,11 @@ public abstract class IccFileHandler extends Handler implements IccConstants {
     /** Finished retrieving size of record for EFimg now. */
     static protected final int EVENT_GET_RECORD_SIZE_IMG_DONE = 11;
 
-     // member variables
+    // member variables
+    // MTK-START: add-on
     @UnsupportedAppUsage
-    protected final CommandsInterface mCi;
+    public final CommandsInterface mCi;
+    // MTK-END
     @UnsupportedAppUsage
     protected final UiccCardApplication mParentApp;
     @UnsupportedAppUsage
@@ -217,7 +219,9 @@ public abstract class IccFileHandler extends Handler implements IccConstants {
 
         mCi.iccIOForApp(COMMAND_GET_RESPONSE, IccConstants.EF_IMG,
                     getEFPath(IccConstants.EF_IMG), recordNum,
-                    READ_RECORD_MODE_ABSOLUTE, GET_RESPONSE_EF_IMG_SIZE_BYTES,
+                    // MTK-START: SIM COMMON
+                    READ_RECORD_MODE_ABSOLUTE, GET_RESPONSE_EF_SIZE_BYTES,
+                    // MTK-END
                     null, null, mAid, response);
     }
 
@@ -408,8 +412,9 @@ public abstract class IccFileHandler extends Handler implements IccConstants {
 
 
     //***** Private Methods
-
-    private void sendResult(Message response, Object result, Throwable ex) {
+    // MTK-START: add on
+    protected void sendResult(Message response, Object result, Throwable ex) {
+    // MTK-END
         if (response == null) {
             return;
         }
@@ -419,7 +424,9 @@ public abstract class IccFileHandler extends Handler implements IccConstants {
         response.sendToTarget();
     }
 
-    private boolean processException(Message response, AsyncResult ar) {
+    // MTK-START: add on
+    protected boolean processException(Message response, AsyncResult ar) {
+    // MTK-END
         IccException iccException;
         boolean flag = false;
         IccIoResult result = (IccIoResult) ar.result;
@@ -656,4 +663,64 @@ public abstract class IccFileHandler extends Handler implements IccConstants {
     protected abstract void logd(String s);
     protected abstract void loge(String s);
 
+    // MTK-START: add-on
+    public void loadEFLinearFixedAll(int fileid, Message onLoaded, boolean is7FFF) {
+        sendResult(onLoaded, null, new IccException("Default loadEFLinearFixedAll exception."));
+    }
+
+    public void loadEFLinearFixedAll(int fileid, int mode , Message onLoaded) {
+        sendResult(onLoaded, null, new IccException("Default loadEFLinearFixedAll exception."));
+    }
+
+    /**
+     * Load a SIM Transparent EF with path specified.
+     *
+     * @param fileid EF id
+     * @param path EF path
+     * @param onLoaded
+     *
+     * ((AsyncResult)(onLoaded.obj)).result is the byte[]
+     *
+     */
+
+    public void loadEFTransparent(int fileid, String path, Message onLoaded) {
+        sendResult(onLoaded, null, new IccException("Default loadEFTransparent exception."));
+    }
+
+    /**
+     * Update a transparent EF.
+     * @param fileid EF id
+     * @param path Path of the EF on the card
+     * @param data must be exactly as long as the EF
+     * @param onComplete onComplete.obj will be an AsyncResult
+     */
+    public void updateEFTransparent(int fileid, String path, byte[] data, Message onComplete) {
+        sendResult(onComplete, null, new IccException("Default updateEFTransparent exception."));
+    }
+
+    /**
+     * Read a record from a SIM Linear Fixed EF.
+     *
+     * @param fileid EF id
+     * @param recordNum 1-based (not 0-based) record number
+     * @param recordSize record size
+     * @param onLoaded
+     *
+     * ((AsyncResult)(onLoaded.obj)).result is the byte[]
+     *
+     */
+    public void readEFLinearFixed(int fileid, int recordNum, int recordSize, Message onLoaded) {
+        sendResult(onLoaded, null, new IccException("Default readEFLinearFixed exception."));
+    }
+    /**
+     * select an EF file and get response.
+     *
+     * @param fileid EF id
+     * @param onLoaded (EFResponseData)efData
+     *
+     */
+    public void selectEFFile(int fileid, Message onLoaded) {
+        sendResult(onLoaded, null, new IccException("Default selectEFFile exception."));
+    }
+    // MTK-END
 }

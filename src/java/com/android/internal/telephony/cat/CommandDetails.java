@@ -28,7 +28,9 @@ abstract class ValueObject {
  * Class for Command Details object of proactive commands from SIM.
  * {@hide}
  */
-class CommandDetails extends ValueObject implements Parcelable {
+// MTK-START
+public class CommandDetails extends ValueObject implements Parcelable {
+// MTK-END
     @UnsupportedAppUsage
     public boolean compRequired;
     @UnsupportedAppUsage
@@ -42,8 +44,9 @@ class CommandDetails extends ValueObject implements Parcelable {
     public ComprehensionTlvTag getTag() {
         return ComprehensionTlvTag.COMMAND_DETAILS;
     }
-
-    CommandDetails() {
+    // MTK-START
+    public CommandDetails() {
+    // MTK-END
     }
 
     public boolean compareTo(CommandDetails other) {
@@ -103,28 +106,5 @@ class DeviceIdentities extends ValueObject {
     @Override
     ComprehensionTlvTag getTag() {
         return ComprehensionTlvTag.DEVICE_IDENTITIES;
-    }
-}
-
-// Container class to hold icon identifier value.
-class IconId extends ValueObject {
-    @UnsupportedAppUsage
-    int recordNumber;
-    boolean selfExplanatory;
-
-    @Override
-    ComprehensionTlvTag getTag() {
-        return ComprehensionTlvTag.ICON_ID;
-    }
-}
-
-// Container class to hold item icon identifier list value.
-class ItemsIconId extends ValueObject {
-    int [] recordNumbers;
-    boolean selfExplanatory;
-
-    @Override
-    ComprehensionTlvTag getTag() {
-        return ComprehensionTlvTag.ITEM_ICON_ID_LIST;
     }
 }

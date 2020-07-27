@@ -155,6 +155,9 @@ public interface PhoneInternalInterface {
     static final String REASON_CARRIER_ACTION_DISABLE_METERED_APN =
             "carrierActionDisableMeteredApn";
     static final String REASON_CSS_INDICATOR_CHANGED = "cssIndicatorChanged";
+    // M: IMS E911 Bearer Management
+    // Define reason for PDN disconnection caused by reaching max PDN pool size
+    static final String MTK_REASON_PDN_OCCUPIED = "pdnOccupied";
     static final String REASON_RELEASED_BY_CONNECTIVITY_SERVICE = "releasedByConnectivityService";
     static final String REASON_DATA_ENABLED_OVERRIDE = "dataEnabledOverride";
 

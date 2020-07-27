@@ -43,12 +43,13 @@ public class NotifyRespInd extends GenericPdu {
         setStatus(status);
     }
 
+    /*MTK Change access type*/
     /**
      * Constructor with given headers.
      *
      * @param headers Headers for this PDU.
      */
-    NotifyRespInd(PduHeaders headers) {
+    public NotifyRespInd(PduHeaders headers) {
         super(headers);
     }
 

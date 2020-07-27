@@ -17,7 +17,9 @@
 package com.android.internal.telephony.dataconnection;
 
 import android.content.Context;
+import android.os.Bundle;
 import android.os.PersistableBundle;
+import android.os.SystemProperties;
 import android.telephony.CarrierConfigManager;
 import android.telephony.Rlog;
 import android.telephony.data.ApnSetting;
@@ -27,6 +29,7 @@ import android.util.Log;
 import com.android.internal.telephony.Phone;
 import com.android.internal.telephony.uicc.IccRecords;
 
+import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.HashSet;
 
@@ -39,7 +42,40 @@ public class ApnSettingUtils {
 
     private static final boolean DBG = false;
 
-    private static boolean iccidMatches(String mvnoData, String iccId) {
+    /**
+     * Static methods used for MTK add-on reflections
+     */
+    private static Method sMethodMvnoMatchesEx;
+    private static Method sMethodIsMeteredApnTypeEx;
+    static {
+        if (SystemProperties.get("ro.vendor.mtk_telephony_add_on_policy", "0").equals("0")) {
+            Class<?> clz = null;
+            try {
+                clz = Class.forName("com.mediatek.internal.telephony.dataconnection."
+                        + "MtkApnSettingUtils");
+            } catch (Exception e) {
+                Rlog.d(LOG_TAG, e.toString());
+            }
+            if (clz != null) {
+                try {
+                    sMethodMvnoMatchesEx = clz.getDeclaredMethod("mvnoMatchesEx", IccRecords.class,
+                            int.class, String.class);
+                    sMethodMvnoMatchesEx.setAccessible(true);
+                } catch (Exception e) {
+                    Rlog.d(LOG_TAG, e.toString());
+                }
+                try {
+                    sMethodIsMeteredApnTypeEx = clz.getDeclaredMethod("isMeteredApnTypeEx",
+                            int.class, Phone.class);
+                    sMethodIsMeteredApnTypeEx.setAccessible(true);
+                } catch (Exception e) {
+                    Rlog.d(LOG_TAG, e.toString());
+                }
+            }
+        }
+    }
+
+    public static boolean iccidMatches(String mvnoData, String iccId) {
         String[] mvnoIccidList = mvnoData.split(",");
         for (String mvnoIccid : mvnoIccidList) {
             if (iccId.startsWith(mvnoIccid)) {
@@ -50,7 +86,7 @@ public class ApnSettingUtils {
         return false;
     }
 
-    private static boolean imsiMatches(String imsiDB, String imsiSIM) {
+    public static boolean imsiMatches(String imsiDB, String imsiSIM) {
         // Note: imsiDB value has digit number or 'x' character for seperating USIM information
         // for MVNO operator. And then digit number is matched at same order and 'x' character
         // could replace by any digit number.
@@ -105,6 +141,15 @@ public class ApnSettingUtils {
                 return true;
             }
         }
+        /// M: reflection for telephony add-on @{
+        try {
+            if (sMethodMvnoMatchesEx != null) {
+                return (boolean) sMethodMvnoMatchesEx.invoke(null, r, mvnoType, mvnoMatchData);
+            }
+        } catch (Exception e) {
+            Rlog.d(LOG_TAG, e.toString());
+        }
+        /// @}
 
         return false;
     }
@@ -120,6 +165,18 @@ public class ApnSettingUtils {
         if (phone == null) {
             return true;
         }
+        /// M: reflection for telephony add-on @{
+        try {
+            if (sMethodIsMeteredApnTypeEx != null) {
+                Bundle b = (Bundle) sMethodIsMeteredApnTypeEx.invoke(null, apnType, phone);
+                if (b.getBoolean("useEx")) {
+                    return b.getBoolean("result");
+                }
+            }
+        } catch (Exception e) {
+            Rlog.d(LOG_TAG, e.toString());
+        }
+        /// @}
 
         boolean isRoaming = phone.getServiceState().getDataRoaming();
         int subId = phone.getSubId();

@@ -123,6 +123,8 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
+import java.lang.reflect.Method;
+
 /**
  * RIL implementation of the CommandsInterface.
  *
@@ -146,7 +148,7 @@ public class RIL extends BaseCommands implements CommandsInterface {
     // Wake lock default timeout associated with ack
     private static final int DEFAULT_ACK_WAKE_LOCK_TIMEOUT_MS = 200;
 
-    private static final int DEFAULT_BLOCKING_MESSAGE_RESPONSE_TIMEOUT_MS = 2000;
+    protected static final int DEFAULT_BLOCKING_MESSAGE_RESPONSE_TIMEOUT_MS = 2000;
 
     // Variables used to differentiate ack messages from request while calling clearWakeLock()
     public static final int INVALID_WAKELOCK = -1;
@@ -173,7 +175,7 @@ public class RIL extends BaseCommands implements CommandsInterface {
     public static final HalVersion RADIO_HAL_VERSION_1_4 = new HalVersion(1, 4);
 
     // IRadio version
-    private HalVersion mRadioVersion = RADIO_HAL_VERSION_UNKNOWN;
+    protected HalVersion mRadioVersion = RADIO_HAL_VERSION_UNKNOWN;
 
     //***** Instance Variables
 
@@ -199,9 +201,9 @@ public class RIL extends BaseCommands implements CommandsInterface {
 
     // When we are testing emergency calls
     @UnsupportedAppUsage
-    AtomicBoolean mTestingEmergencyCall = new AtomicBoolean(false);
+    public AtomicBoolean mTestingEmergencyCall = new AtomicBoolean(false);
 
-    final Integer mPhoneId;
+    protected final Integer mPhoneId;
 
     /**
      * A set that records if radio service is disabled in hal for
@@ -216,38 +218,38 @@ public class RIL extends BaseCommands implements CommandsInterface {
     Set<Integer> mDisabledOemHookServices = new HashSet();
 
     /* default work source which will blame phone process */
-    private WorkSource mRILDefaultWorkSource;
+    protected WorkSource mRILDefaultWorkSource;
 
     /* Worksource containing all applications causing wakelock to be held */
     private WorkSource mActiveWakelockWorkSource;
 
     /** Telephony metrics instance for logging metrics event */
-    private TelephonyMetrics mMetrics = TelephonyMetrics.getInstance();
+    protected TelephonyMetrics mMetrics = TelephonyMetrics.getInstance();
     /** Radio bug detector instance */
     private RadioBugDetector mRadioBugDetector = null;
 
-    boolean mIsMobileNetworkSupported;
+    protected boolean mIsMobileNetworkSupported;
     RadioResponse mRadioResponse;
     RadioIndication mRadioIndication;
-    volatile IRadio mRadioProxy = null;
+    protected volatile IRadio mRadioProxy = null;
     OemHookResponse mOemHookResponse;
     OemHookIndication mOemHookIndication;
     volatile IOemHook mOemHookProxy = null;
-    final AtomicLong mRadioProxyCookie = new AtomicLong(0);
-    final RadioProxyDeathRecipient mRadioProxyDeathRecipient;
-    final RilHandler mRilHandler;
+    protected final AtomicLong mRadioProxyCookie = new AtomicLong(0);
+    protected final RadioProxyDeathRecipient mRadioProxyDeathRecipient;
+    protected RilHandler mRilHandler;
 
     //***** Events
     static final int EVENT_WAKE_LOCK_TIMEOUT    = 2;
     static final int EVENT_ACK_WAKE_LOCK_TIMEOUT    = 4;
-    static final int EVENT_BLOCKING_RESPONSE_TIMEOUT = 5;
-    static final int EVENT_RADIO_PROXY_DEAD     = 6;
+    protected static final int EVENT_BLOCKING_RESPONSE_TIMEOUT = 5;
+    protected static final int EVENT_RADIO_PROXY_DEAD     = 6;
 
     //***** Constants
 
     static final String[] HIDL_SERVICE_NAME = {"slot1", "slot2", "slot3"};
 
-    static final int IRADIO_GET_SERVICE_DELAY_MILLIS = 4 * 1000;
+    protected static final int IRADIO_GET_SERVICE_DELAY_MILLIS = 1000;
 
     static final String EMPTY_ALPHA_LONG = "";
     static final String EMPTY_ALPHA_SHORT = "";
@@ -382,11 +384,14 @@ public class RIL extends BaseCommands implements CommandsInterface {
         public void serviceDied(long cookie) {
             // Deal with service going away
             riljLog("serviceDied");
-            mRilHandler.sendMessage(mRilHandler.obtainMessage(EVENT_RADIO_PROXY_DEAD, cookie));
+            mRilHandler.removeMessages(EVENT_RADIO_PROXY_DEAD);
+            mRilHandler.sendMessageDelayed(
+                    mRilHandler.obtainMessage(EVENT_RADIO_PROXY_DEAD, cookie),
+                    IRADIO_GET_SERVICE_DELAY_MILLIS);
         }
     }
 
-    private void resetProxyAndRequestList() {
+    protected void resetProxyAndRequestList() {
         mRadioProxy = null;
         mOemHookProxy = null;
 
@@ -426,54 +431,41 @@ public class RIL extends BaseCommands implements CommandsInterface {
                         + " is disabled");
             } else {
                 try {
-                    mRadioProxy = android.hardware.radio.V1_4.IRadio.getService(
-                            HIDL_SERVICE_NAME[mPhoneId], true);
-                    mRadioVersion = RADIO_HAL_VERSION_1_4;
+                    mRadioProxy = android.hardware.radio.V1_0.IRadio.getService(
+                            HIDL_SERVICE_NAME[mPhoneId], isGetHidlServiceSync());
+                    mRadioVersion = RADIO_HAL_VERSION_1_0;
                 } catch (NoSuchElementException e) {
-                }
-
-                if (mRadioProxy == null) {
-                    try {
-                        mRadioProxy = android.hardware.radio.V1_3.IRadio.getService(
-                                HIDL_SERVICE_NAME[mPhoneId], true);
-                        mRadioVersion = RADIO_HAL_VERSION_1_3;
-                    } catch (NoSuchElementException e) {
-                    }
-                }
-
-                if (mRadioProxy == null) {
-                    try {
-                        mRadioProxy = android.hardware.radio.V1_2.IRadio.getService(
-                                HIDL_SERVICE_NAME[mPhoneId], true);
-                        mRadioVersion = RADIO_HAL_VERSION_1_2;
-                    } catch (NoSuchElementException e) {
-                    }
-                }
-
-                if (mRadioProxy == null) {
-                    try {
-                        mRadioProxy = android.hardware.radio.V1_1.IRadio.getService(
-                                HIDL_SERVICE_NAME[mPhoneId], true);
-                        mRadioVersion = RADIO_HAL_VERSION_1_1;
-                    } catch (NoSuchElementException e) {
-                    }
-                }
-
-                if (mRadioProxy == null) {
-                    try {
-                        mRadioProxy = android.hardware.radio.V1_0.IRadio.getService(
-                                HIDL_SERVICE_NAME[mPhoneId], true);
-                        mRadioVersion = RADIO_HAL_VERSION_1_0;
-                    } catch (NoSuchElementException e) {
-                    }
+                    riljLoge("getRadioProxy: NoSuchElementException ");
                 }
 
                 if (mRadioProxy != null) {
+                    if (android.hardware.radio.V1_4.IRadio.castFrom(mRadioProxy) != null) {
+                        mRadioProxy = android.hardware.radio.V1_4.IRadio.castFrom(mRadioProxy);
+                        mRadioVersion = RADIO_HAL_VERSION_1_4;
+                    } else if (android.hardware.radio.V1_3.IRadio.castFrom(mRadioProxy) != null) {
+                        mRadioProxy = android.hardware.radio.V1_3.IRadio.castFrom(mRadioProxy);
+                        mRadioVersion = RADIO_HAL_VERSION_1_3;
+                    } else if (android.hardware.radio.V1_2.IRadio.castFrom(mRadioProxy) != null) {
+                        mRadioProxy = android.hardware.radio.V1_2.IRadio.castFrom(mRadioProxy);
+                        mRadioVersion = RADIO_HAL_VERSION_1_2;
+                    } else if (android.hardware.radio.V1_1.IRadio.castFrom(mRadioProxy) != null) {
+                        mRadioProxy = android.hardware.radio.V1_1.IRadio.castFrom(mRadioProxy);
+                        mRadioVersion = RADIO_HAL_VERSION_1_1;
+                    }
+                    riljLoge("getRadioProxy: mRadioVersion " + mRadioVersion);
                     mRadioProxy.linkToDeath(mRadioProxyDeathRecipient,
                             mRadioProxyCookie.incrementAndGet());
-                    mRadioProxy.setResponseFunctions(mRadioResponse, mRadioIndication);
+                    // Add-on to override the setResponseFunctions
+                    setResponseFunctions();
                 } else {
-                    mDisabledRadioServices.add(mPhoneId);
+                    /* MTK uses non-blocking method to get HIDL service to avoid ANR issue.
+                     * It's possible to get null service when RILD resetting then the phone ID
+                     * will be stored in the mDisabledRadioServices. It causes the issue
+                     * that RILJ no long tries to get service because the AOSP doesn't provide
+                     * the clear flow for mDisabledRadioServices. To avoid this issue for temporary,
+                     * we skip the flow to store the phone ID.
+                     */
+                    //mDisabledRadioServices.add(mPhoneId);
                     riljLoge("getRadioProxy: mRadioProxy for "
                             + HIDL_SERVICE_NAME[mPhoneId] + " is disabled");
                 }
@@ -491,6 +483,11 @@ public class RIL extends BaseCommands implements CommandsInterface {
                         CommandException.fromRilErrno(RADIO_NOT_AVAILABLE));
                 result.sendToTarget();
             }
+            // if service is not up, treat it like death notification to try to get service again
+            mRilHandler.removeMessages(EVENT_RADIO_PROXY_DEAD);
+            mRilHandler.sendMessageDelayed(
+                    mRilHandler.obtainMessage(EVENT_RADIO_PROXY_DEAD, mRadioProxyCookie.get()),
+                    IRADIO_GET_SERVICE_DELAY_MILLIS);
         }
 
         return mRadioProxy;
@@ -518,7 +515,8 @@ public class RIL extends BaseCommands implements CommandsInterface {
                 riljLoge("getOemHookProxy: mOemHookProxy for " + HIDL_SERVICE_NAME[mPhoneId]
                         + " is disabled");
             } else {
-                mOemHookProxy = IOemHook.getService(HIDL_SERVICE_NAME[mPhoneId], true);
+                mOemHookProxy = IOemHook.getService(HIDL_SERVICE_NAME[mPhoneId],
+                        isGetHidlServiceSync());
                 if (mOemHookProxy != null) {
                     // not calling linkToDeath() as ril service runs in the same process and death
                     // notification for that should be sufficient
@@ -549,6 +547,17 @@ public class RIL extends BaseCommands implements CommandsInterface {
     }
 
     //***** Constructors
+    @VisibleForTesting
+    public RIL() {
+        super(null);
+        mAckWakeLock = null;
+        mWakeLock = null;
+        mRadioProxyDeathRecipient = null;
+        mRilHandler = null;
+        mPhoneId = 0;
+        mAckWakeLockTimeout = 0;
+        mWakeLockTimeout = 0;
+    }
 
     @UnsupportedAppUsage
     public RIL(Context context, int preferredNetworkType, int cdmaSubscription) {
@@ -638,18 +647,18 @@ public class RIL extends BaseCommands implements CommandsInterface {
         }
     }
 
-    private RILRequest obtainRequest(int request, Message result, WorkSource workSource) {
+    protected RILRequest obtainRequest(int request, Message result, WorkSource workSource) {
         RILRequest rr = RILRequest.obtain(request, result, workSource);
         addRequest(rr);
         return rr;
     }
 
-    private void handleRadioProxyExceptionForRR(RILRequest rr, String caller, Exception e) {
+    protected void handleRadioProxyExceptionForRR(RILRequest rr, String caller, Exception e) {
         riljLoge(caller + ": " + e);
         resetProxyAndRequestList();
     }
 
-    private static String convertNullToEmptyString(String string) {
+    protected static String convertNullToEmptyString(String string) {
         return string != null ? string : "";
     }
 
@@ -2698,7 +2707,7 @@ public class RIL extends BaseCommands implements CommandsInterface {
     }
 
     // convert to android.hardware.radio.V1_0.RadioAccessFamily
-    private static int convertToHalRadioAccessFamily(
+    protected static int convertToHalRadioAccessFamily(
             @TelephonyManager.NetworkTypeBitMask int networkTypeBitmask) {
         int raf = 0;
 
@@ -2977,7 +2986,7 @@ public class RIL extends BaseCommands implements CommandsInterface {
         }
     }
 
-    private void constructCdmaSendSmsRilRequest(CdmaSmsMessage msg, byte[] pdu) {
+    protected void constructCdmaSendSmsRilRequest(CdmaSmsMessage msg, byte[] pdu) {
         int addrNbrOfDigits;
         int subaddrNbrOfDigits;
         int bearerDataLength;
@@ -3244,7 +3253,9 @@ public class RIL extends BaseCommands implements CommandsInterface {
 
             CdmaSmsWriteArgs args = new CdmaSmsWriteArgs();
             args.status = status;
-            constructCdmaSendSmsRilRequest(args.message, pdu.getBytes());
+            // MTK-START: Fix AOSP issue, should convert hex string to byte by IccUtils
+            constructCdmaSendSmsRilRequest(args.message, IccUtils.hexStringToBytes(pdu));
+            // MTK-END
 
             try {
                 radioProxy.writeSmsToRuim(rr.mSerial, args);
@@ -3477,6 +3488,12 @@ public class RIL extends BaseCommands implements CommandsInterface {
                 handleRadioProxyExceptionForRR(rr, "setCellInfoListRate", e);
             }
         }
+    }
+
+    // MTK-START: add-on
+    public void setCellInfoListRate() {
+    // MTK-END
+        setCellInfoListRate(Integer.MAX_VALUE, null, mRILDefaultWorkSource);
     }
 
     @Override
@@ -4004,7 +4021,8 @@ public class RIL extends BaseCommands implements CommandsInterface {
 
             halRc.session = rc.getSession();
             halRc.phase = rc.getPhase();
-            halRc.raf = rc.getRadioAccessFamily();
+            // halRc.raf = rc.getRadioAccessFamily();
+            halRc.raf = convertToHalRadioAccessFamily(rc.getRadioAccessFamily());
             halRc.logicalModemUuid = convertNullToEmptyString(rc.getLogicalModemUuid());
             halRc.status = rc.getStatus();
 
@@ -4624,7 +4642,7 @@ public class RIL extends BaseCommands implements CommandsInterface {
      *  Translates EF_SMS status bits to a status value compatible with
      *  SMS AT commands.  See TS 27.005 3.1.
      */
-    private int translateStatus(int status) {
+    protected int translateStatus(int status) {
         switch(status & 0x7) {
             case SmsManager.STATUS_ON_ICC_READ:
                 return 1;
@@ -4674,7 +4692,7 @@ public class RIL extends BaseCommands implements CommandsInterface {
      * It takes care of acquiring wakelock and sending ack if needed.
      * @param indicationType RadioIndicationType received
      */
-    void processIndication(int indicationType) {
+    public void processIndication(int indicationType) {
         if (indicationType == RadioIndicationType.UNSOLICITED_ACK_EXP) {
             sendAck();
             if (RILJ_LOGD) riljLog("Unsol response received; Sending ack to ril.cpp");
@@ -4683,7 +4701,7 @@ public class RIL extends BaseCommands implements CommandsInterface {
         }
     }
 
-    void processRequestAck(int serial) {
+    public void processRequestAck(int serial) {
         RILRequest rr;
         synchronized (mRequestList) {
             rr = mRequestList.get(serial);
@@ -4694,7 +4712,7 @@ public class RIL extends BaseCommands implements CommandsInterface {
         } else {
             decrementWakeLock(rr);
             if (RIL.RILJ_LOGD) {
-                riljLog(rr.serialString() + " Ack < " + RIL.requestToString(rr.mRequest));
+                riljLog(rr.serialString() + " Ack < " + requestToString(rr.mRequest));
             }
         }
     }
@@ -4748,7 +4766,7 @@ public class RIL extends BaseCommands implements CommandsInterface {
             sendAck();
             if (RIL.RILJ_LOGD) {
                 riljLog("Response received for " + rr.serialString() + " "
-                        + RIL.requestToString(rr.mRequest) + " Sending ack to ril.cpp");
+                        + requestToString(rr.mRequest) + " Sending ack to ril.cpp");
             }
         } else {
             // ack sent for SOLICITED_ACK_EXP above; nothing to do for SOLICITED response
@@ -5073,7 +5091,7 @@ public class RIL extends BaseCommands implements CommandsInterface {
     }
 
     @UnsupportedAppUsage
-    static String retToString(int req, Object ret) {
+    protected static String retToString(int req, Object ret) {
         if (ret == null) return "";
         switch (req) {
             // Don't log these return values, for privacy's sake.
@@ -5179,7 +5197,7 @@ public class RIL extends BaseCommands implements CommandsInterface {
      * @param rilVer is the version of the ril or -1 if disconnected.
      */
     @UnsupportedAppUsage
-    void notifyRegistrantsRilConnectionChanged(int rilVer) {
+    public void notifyRegistrantsRilConnectionChanged(int rilVer) {
         mRilVersion = rilVer;
         if (mRilConnectedRegistrants != null) {
             mRilConnectedRegistrants.notifyRegistrants(
@@ -5239,7 +5257,7 @@ public class RIL extends BaseCommands implements CommandsInterface {
     }
 
     @UnsupportedAppUsage
-    static String requestToString(int request) {
+    protected static String requestToString(int request) {
         switch(request) {
             case RIL_REQUEST_GET_SIM_STATUS:
                 return "GET_SIM_STATUS";
@@ -5540,12 +5558,31 @@ public class RIL extends BaseCommands implements CommandsInterface {
                 return "RIL_REQUEST_ENABLE_MODEM";
             case RIL_REQUEST_GET_MODEM_STATUS:
                 return "RIL_REQUEST_GET_MODEM_STATUS";
-            default: return "<unknown request>";
+            default:
+                /// M: Revise for telephony add on
+                String requestString;
+                // Check telephony add on support property
+                if (SystemProperties.get("ro.vendor.mtk_telephony_add_on_policy", "0")
+                        .equals("0")) {
+                    try {
+                        String className = "com.mediatek.internal.telephony.MtkRIL";
+                        Class<?> clz = Class.forName(className);
+                        Method extMtkRilMethod = clz.getDeclaredMethod("requestToStringEx",
+                                Integer.class);
+                        requestString = (String) extMtkRilMethod.invoke(null, request);
+                    } catch (Exception e) {
+                        requestString = "<unknown request>";
+                    }
+                } else {
+                    requestString = "<unknown request>";
+                }
+                return requestString;
+                ///
         }
     }
 
     @UnsupportedAppUsage
-    static String responseToString(int request) {
+    protected static String responseToString(int request) {
         switch(request) {
             case RIL_UNSOL_RESPONSE_RADIO_STATE_CHANGED:
                 return "UNSOL_RESPONSE_RADIO_STATE_CHANGED";
@@ -5652,44 +5689,62 @@ public class RIL extends BaseCommands implements CommandsInterface {
             case RIL_UNSOL_PHYSICAL_CHANNEL_CONFIG:
                 return "RIL_UNSOL_PHYSICAL_CHANNEL_CONFIG";
             default:
-                return "<unknown response>";
+                /// M: Revise for telephony add on
+                String responseString;
+                // Check telephony add on support property
+                if (SystemProperties.get("ro.vendor.mtk_telephony_add_on_policy", "0")
+                        .equals("0")) {
+                    try {
+                        String className = "com.mediatek.internal.telephony.MtkRIL";
+                        Class<?> clz = Class.forName(className);
+                        Method extMtkRilMethod = clz.getDeclaredMethod("responseToStringEx",
+                                Integer.class);
+                        responseString = (String) extMtkRilMethod.invoke(null, request);
+                    } catch (Exception e) {
+                        responseString = "<unknown response>";
+                    }
+                } else {
+                    responseString = "<unknown response>";
+                }
+                return responseString;
+                ///
         }
     }
 
     @UnsupportedAppUsage
-    void riljLog(String msg) {
+    public void riljLog(String msg) {
         Rlog.d(RILJ_LOG_TAG, msg + (" [SUB" + mPhoneId + "]"));
     }
 
-    void riljLoge(String msg) {
+    public void riljLoge(String msg) {
         Rlog.e(RILJ_LOG_TAG, msg + (" [SUB" + mPhoneId + "]"));
     }
 
-    void riljLoge(String msg, Exception e) {
+    public void riljLoge(String msg, Exception e) {
         Rlog.e(RILJ_LOG_TAG, msg + (" [SUB" + mPhoneId + "]"), e);
     }
 
-    void riljLogv(String msg) {
+    public void riljLogv(String msg) {
         Rlog.v(RILJ_LOG_TAG, msg + (" [SUB" + mPhoneId + "]"));
     }
 
     @UnsupportedAppUsage
-    void unsljLog(int response) {
+    public void unsljLog(int response) {
         riljLog("[UNSL]< " + responseToString(response));
     }
 
     @UnsupportedAppUsage
-    void unsljLogMore(int response, String more) {
+    public void unsljLogMore(int response, String more) {
         riljLog("[UNSL]< " + responseToString(response) + " " + more);
     }
 
     @UnsupportedAppUsage
-    void unsljLogRet(int response, Object ret) {
+    public void unsljLogRet(int response, Object ret) {
         riljLog("[UNSL]< " + responseToString(response) + " " + retToString(response, ret));
     }
 
     @UnsupportedAppUsage
-    void unsljLogvRet(int response, Object ret) {
+    public void unsljLogvRet(int response, Object ret) {
         riljLogv("[UNSL]< " + responseToString(response) + " " + retToString(response, ret));
     }
 
@@ -6053,5 +6108,24 @@ public class RIL extends BaseCommands implements CommandsInterface {
      */
     public HalVersion getHalVersion() {
         return mRadioVersion;
+    }
+
+    protected void setResponseFunctions() {
+        try {
+            mRadioProxy.setResponseFunctions(mRadioResponse, mRadioIndication);
+        } catch (RemoteException e) {
+            riljLoge("getRadioProxy: setResponseFunctions, " + e);
+        }
+    }
+
+    /**
+     * Get HIDL service with synchronous function may cause main thread blocking and cause ANR.
+     * We will override this function and use unsync function.
+     *
+     * @return true : sync get service
+     *         false : unsync get service
+     */
+    protected boolean isGetHidlServiceSync() {
+        return true;
     }
 }

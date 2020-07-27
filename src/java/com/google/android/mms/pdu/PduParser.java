@@ -34,17 +34,22 @@ public class PduParser {
      */
     private static final int QUOTE = 127;
     private static final int LENGTH_QUOTE = 31;
-    private static final int TEXT_MIN = 32;
-    private static final int TEXT_MAX = 127;
+    /*MTK Change access type*/
+    protected static final int TEXT_MIN = 32;
+    /*MTK Change access type*/
+    protected static final int TEXT_MAX = 127;
     private static final int SHORT_INTEGER_MAX = 127;
     private static final int SHORT_LENGTH_MAX = 30;
     private static final int LONG_INTEGER_LENGTH_MAX = 8;
     private static final int QUOTED_STRING_FLAG = 34;
-    private static final int END_STRING_FLAG = 0x00;
+    /*MTK Change access type*/
+    protected static final int END_STRING_FLAG = 0x00;
     //The next two are used by the interface "parseWapString" to
     //distinguish Text-String and Quoted-String.
-    private static final int TYPE_TEXT_STRING = 0;
-    private static final int TYPE_QUOTED_STRING = 1;
+    /*MTK Change access type*/
+    protected static final int TYPE_TEXT_STRING = 0;
+    /*MTK Change access type*/
+    protected static final int TYPE_QUOTED_STRING = 1;
     private static final int TYPE_TOKEN_STRING = 2;
 
     /**
@@ -53,42 +58,49 @@ public class PduParser {
     private static final int THE_FIRST_PART = 0;
     private static final int THE_LAST_PART = 1;
 
+    /*MTK Change access type*/
     /**
      * The pdu data.
      */
-    private ByteArrayInputStream mPduDataStream = null;
+    protected ByteArrayInputStream mPduDataStream = null;
 
+    /*MTK Change access type*/
     /**
      * Store pdu headers
      */
-    private PduHeaders mHeaders = null;
+    protected PduHeaders mHeaders = null;
 
+    /*MTK Change access type*/
     /**
      * Store pdu parts.
      */
-    private PduBody mBody = null;
+    protected PduBody mBody = null;
 
+    /* MTK Change access type */
     /**
      * Store the "type" parameter in "Content-Type" header field.
      */
-    private static byte[] mTypeParam = null;
+    protected static byte[] mTypeParam = null;
 
+    /* MTK Change access type */
     /**
      * Store the "start" parameter in "Content-Type" header field.
      */
-    private static byte[] mStartParam = null;
+    protected static byte[] mStartParam = null;
 
     /**
      * The log tag.
      */
     private static final String LOG_TAG = "PduParser";
     private static final boolean DEBUG = false;
-    private static final boolean LOCAL_LOGV = false;
+    /*MTK Change access type*/
+    protected static final boolean LOCAL_LOGV = false;
 
+    /*MTK Change access type*/
     /**
      * Whether to parse content-disposition part header
      */
-    private final boolean mParseContentDisposition;
+    protected final boolean mParseContentDisposition;
 
     /**
      * Constructor.
@@ -941,12 +953,13 @@ public class PduParser {
         return body;
     }
 
+    /* MTK Change access type */
     /**
      * Log status.
      *
      * @param text log information
      */
-    private static void log(String text) {
+    protected static void log(String text) {
         if (LOCAL_LOGV) {
             Log.v(LOG_TAG, text);
         }
@@ -1329,6 +1342,7 @@ public class PduParser {
         }
     }
 
+    /*MTK Change access type*/
     /**
      * Parse content type parameters. For now we just support
      * four parameters used in mms: "type", "start", "name", "charset".
@@ -1337,7 +1351,7 @@ public class PduParser {
      * @param map to store parameters of Content-Type field
      * @param length length of all the parameters
      */
-    protected static void parseContentTypeParams(ByteArrayInputStream pduDataStream,
+    protected void parseContentTypeParams(ByteArrayInputStream pduDataStream,
             HashMap<Integer, Object> map, Integer length) {
         /**
          * From wap-230-wsp-20010705-a.pdf
@@ -1513,6 +1527,7 @@ public class PduParser {
         }
     }
 
+    /*MTK Change access type*/
     /**
      * Parse content type.
      *
@@ -1520,7 +1535,7 @@ public class PduParser {
      * @param map to store parameters in Content-Type header field
      * @return Content-Type value
      */
-    protected static byte[] parseContentType(ByteArrayInputStream pduDataStream,
+    protected byte[] parseContentType(ByteArrayInputStream pduDataStream,
             HashMap<Integer, Object> map) {
         /**
          * From wap-230-wsp-20010705-a.pdf

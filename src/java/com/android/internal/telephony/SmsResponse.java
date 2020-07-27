@@ -25,8 +25,12 @@ import android.annotation.UnsupportedAppUsage;
  */
 public class SmsResponse {
     /** Message reference of the just-sent SMS. */
+    // MTK-START
+    // Modification for sub class
     @UnsupportedAppUsage
-    int mMessageRef;
+    public int mMessageRef;
+    // MTK-END
+
     /** ackPdu for the just-sent SMS. */
     @UnsupportedAppUsage
     String mAckPdu;

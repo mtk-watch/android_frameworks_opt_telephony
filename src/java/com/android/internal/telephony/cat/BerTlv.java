@@ -25,7 +25,9 @@ import java.util.List;
  *
  * {@hide}
  */
-class BerTlv {
+// MTK-START
+public class BerTlv {
+// MTK-END
     private int mTag = BER_UNKNOWN_TAG;
     private List<ComprehensionTlv> mCompTlvs = null;
     private boolean mLengthValid = true;

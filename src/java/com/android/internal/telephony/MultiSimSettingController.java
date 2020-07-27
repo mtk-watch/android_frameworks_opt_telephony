@@ -85,25 +85,27 @@ public class MultiSimSettingController extends Handler {
     })
     private @interface PrimarySubChangeType {}
 
+    // MTK-START: add on
     // Primary subscription not change.
-    private static final int PRIMARY_SUB_NO_CHANGE              = 0;
+    protected /*private*/ static final int PRIMARY_SUB_NO_CHANGE              = 0;
     // One or more primary subscriptions are activated.
-    private static final int PRIMARY_SUB_ADDED                  = 1;
+    protected /*private*/ static final int PRIMARY_SUB_ADDED                  = 1;
     // One or more primary subscriptions are deactivated.
-    private static final int PRIMARY_SUB_REMOVED                = 2;
+    protected /*private*/ static final int PRIMARY_SUB_REMOVED                = 2;
     // One or more primary subscriptions are swapped.
-    private static final int PRIMARY_SUB_SWAPPED                = 3;
+    protected /*private*/ static final int PRIMARY_SUB_SWAPPED                = 3;
     // One or more primary subscriptions are swapped but within same sub group.
-    private static final int PRIMARY_SUB_SWAPPED_IN_GROUP       = 4;
+    protected /*private*/ static final int PRIMARY_SUB_SWAPPED_IN_GROUP       = 4;
     // One or more primary subscriptions are marked as opportunistic.
-    private static final int PRIMARY_SUB_MARKED_OPPT            = 5;
+    protected /*private*/ static final int PRIMARY_SUB_MARKED_OPPT            = 5;
     // Subscription information is initially loaded.
-    private static final int PRIMARY_SUB_INITIALIZED            = 6;
+    protected /*private*/ static final int PRIMARY_SUB_INITIALIZED            = 6;
 
-    private final Context mContext;
-    private final SubscriptionController mSubController;
+    protected /*private*/ final Context mContext;
+    protected /*private*/ final SubscriptionController mSubController;
     // Keep a record of active primary (non-opportunistic) subscription list.
-    @NonNull private List<Integer> mPrimarySubList = new ArrayList<>();
+    @NonNull protected /*private*/ List<Integer> mPrimarySubList = new ArrayList<>();
+    // MTK-END
 
     /** The singleton instance. */
     private static MultiSimSettingController sInstance = null;
@@ -114,7 +116,9 @@ public class MultiSimSettingController extends Handler {
     // EVENT_ALL_SUBSCRIPTIONS_LOADED. And calling SubscriptionInfoUpdater#isSubInfoInitialized
     // will make us handle EVENT_SUBSCRIPTION_INFO_CHANGED unexpectedly and causing us to believe
     // the SIMs are newly inserted instead of being initialized.
-    private boolean mSubInfoInitialized = false;
+    // MTK-START: add on
+    protected /*private*/ boolean mSubInfoInitialized = false;
+    // MTK-END
 
     /**
      * Return the singleton or create one if not existed.
@@ -135,7 +139,12 @@ public class MultiSimSettingController extends Handler {
     public static MultiSimSettingController init(Context context, SubscriptionController sc) {
         synchronized (SubscriptionController.class) {
             if (sInstance == null) {
-                sInstance = new MultiSimSettingController(context, sc);
+                // MTK-START: add on
+                //sInstance = new MultiSimSettingController(context, sc);
+                sInstance = TelephonyComponentFactory.getInstance()
+                        .inject(TelephonyComponentFactory.class.getName())
+                        .makeMultiSimSettingController(context, sc);
+                // MTK-END
             } else {
                 Log.wtf(LOG_TAG, "init() called multiple times!  sInstance = " + sInstance);
             }
@@ -229,7 +238,9 @@ public class MultiSimSettingController extends Handler {
      * If user is enabling a non-default non-opportunistic subscription, make it default
      * data subscription.
      */
-    private void onUserDataEnabled(int subId, boolean enable) {
+    // MTK-START: add on
+    protected /*private*/ void onUserDataEnabled(int subId, boolean enable) {
+    // MTK-END
         if (DBG) log("onUserDataEnabled");
         // Make sure MOBILE_DATA of subscriptions in same group are synced.
         setUserDataEnabledForGroup(subId, enable);
@@ -351,7 +362,9 @@ public class MultiSimSettingController extends Handler {
      *
      * @param init whether the subscriptions are just initialized.
      */
-    private void updateDefaults(boolean init) {
+    // MTK-START: add on
+    protected /*private*/ void updateDefaults(boolean init) {
+    // MTK-END
         if (DBG) log("updateDefaults");
 
         if (!mSubInfoInitialized) return;
@@ -410,7 +423,9 @@ public class MultiSimSettingController extends Handler {
     }
 
     @PrimarySubChangeType
-    private int updatePrimarySubListAndGetChangeType(List<SubscriptionInfo> activeSubList,
+    // MTK-START: add on
+    protected /*private*/ int updatePrimarySubListAndGetChangeType(List<SubscriptionInfo> activeSubList,
+    // MTK-END
             boolean init) {
         // Update mPrimarySubList. Opportunistic subscriptions can't be default
         // data / voice / sms subscription.
@@ -454,7 +469,9 @@ public class MultiSimSettingController extends Handler {
         }
     }
 
-    private void sendSubChangeNotificationIfNeeded(int change, boolean dataSelected,
+    // MTK-START: add on
+    protected /*private*/ void sendSubChangeNotificationIfNeeded(int change, boolean dataSelected,
+    // MTK-END
             boolean voiceSelected, boolean smsSelected) {
         @TelephonyManager.DefaultSubscriptionSelectType
         int simSelectDialogType = getSimSelectDialogType(
@@ -486,7 +503,9 @@ public class MultiSimSettingController extends Handler {
         }
     }
 
-    private int getSimSelectDialogType(int change, boolean dataSelected,
+    // MTK-START: add on
+    protected /*private*/ int getSimSelectDialogType(int change, boolean dataSelected,
+    // MTK-END
             boolean voiceSelected, boolean smsSelected) {
         int dialogType = EXTRA_DEFAULT_SUBSCRIPTION_SELECT_TYPE_NONE;
 
@@ -549,7 +568,9 @@ public class MultiSimSettingController extends Handler {
                 || change == PRIMARY_SUB_SWAPPED);
     }
 
-    private void disableDataForNonDefaultNonOpportunisticSubscriptions() {
+    // MTK-START: add on
+    protected /*private*/ void disableDataForNonDefaultNonOpportunisticSubscriptions() {
+    // MTK-END
         if (!mSubInfoInitialized) return;
 
         int defaultDataSub = mSubController.getDefaultDataSubId();
@@ -580,7 +601,9 @@ public class MultiSimSettingController extends Handler {
      * Make sure MOBILE_DATA of subscriptions in the same group with the subId
      * are synced.
      */
-    private void setUserDataEnabledForGroup(int subId, boolean enable) {
+    // MTK-START: add on
+    protected /*private*/ void setUserDataEnabledForGroup(int subId, boolean enable) {
+    // MTK-END
         log("setUserDataEnabledForGroup subId " + subId + " enable " + enable);
         List<SubscriptionInfo> infoList = mSubController.getSubscriptionsInGroup(
                 mSubController.getGroupUuid(subId), mContext.getOpPackageName());
@@ -624,12 +647,16 @@ public class MultiSimSettingController extends Handler {
         }
     }
 
-    private interface UpdateDefaultAction {
+    // MTK-START: add on
+    protected /*private*/ interface UpdateDefaultAction {
+    // MTK-END
         void update(int newValue);
     }
 
     // Returns whether the new default value is valid.
-    private boolean updateDefaultValue(List<Integer> primarySubList, int oldValue,
+    // MTK-START: add on
+    protected /*private*/ boolean updateDefaultValue(List<Integer> primarySubList, int oldValue,
+    // MTK-END
             UpdateDefaultAction action) {
         int newValue = INVALID_SUBSCRIPTION_ID;
 

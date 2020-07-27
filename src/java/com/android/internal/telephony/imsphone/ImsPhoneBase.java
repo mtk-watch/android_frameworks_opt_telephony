@@ -115,7 +115,7 @@ abstract class ImsPhoneBase extends Phone {
      *
      * @param cn The connection.
      */
-    protected void stopOnHoldTone(Connection cn) {
+    public void stopOnHoldTone(Connection cn) {
         Pair<Connection, Boolean> result = new Pair<Connection, Boolean>(cn, Boolean.FALSE);
         mOnHoldRegistrants.notifyRegistrants(new AsyncResult(null, result, null));
     }

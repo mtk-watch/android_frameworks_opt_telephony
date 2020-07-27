@@ -57,37 +57,37 @@ import java.util.List;
  */
 public class CallManager {
 
-    private static final String LOG_TAG ="CallManager";
+    protected static final String LOG_TAG ="CallManager";
     private static final boolean DBG = true;
-    private static final boolean VDBG = false;
+    protected static final boolean VDBG = false;
 
-    private static final int EVENT_DISCONNECT = 100;
-    private static final int EVENT_PRECISE_CALL_STATE_CHANGED = 101;
-    private static final int EVENT_NEW_RINGING_CONNECTION = 102;
-    private static final int EVENT_UNKNOWN_CONNECTION = 103;
-    private static final int EVENT_INCOMING_RING = 104;
-    private static final int EVENT_RINGBACK_TONE = 105;
-    private static final int EVENT_IN_CALL_VOICE_PRIVACY_ON = 106;
-    private static final int EVENT_IN_CALL_VOICE_PRIVACY_OFF = 107;
-    private static final int EVENT_CALL_WAITING = 108;
-    private static final int EVENT_DISPLAY_INFO = 109;
-    private static final int EVENT_SIGNAL_INFO = 110;
-    private static final int EVENT_CDMA_OTA_STATUS_CHANGE = 111;
-    private static final int EVENT_RESEND_INCALL_MUTE = 112;
-    private static final int EVENT_MMI_INITIATE = 113;
-    private static final int EVENT_MMI_COMPLETE = 114;
-    private static final int EVENT_ECM_TIMER_RESET = 115;
-    private static final int EVENT_SUBSCRIPTION_INFO_READY = 116;
-    private static final int EVENT_SUPP_SERVICE_FAILED = 117;
-    private static final int EVENT_SERVICE_STATE_CHANGED = 118;
-    private static final int EVENT_POST_DIAL_CHARACTER = 119;
-    private static final int EVENT_ONHOLD_TONE = 120;
+    protected static final int EVENT_DISCONNECT = 100;
+    protected static final int EVENT_PRECISE_CALL_STATE_CHANGED = 101;
+    protected static final int EVENT_NEW_RINGING_CONNECTION = 102;
+    protected static final int EVENT_UNKNOWN_CONNECTION = 103;
+    protected static final int EVENT_INCOMING_RING = 104;
+    protected static final int EVENT_RINGBACK_TONE = 105;
+    protected static final int EVENT_IN_CALL_VOICE_PRIVACY_ON = 106;
+    protected static final int EVENT_IN_CALL_VOICE_PRIVACY_OFF = 107;
+    protected static final int EVENT_CALL_WAITING = 108;
+    protected static final int EVENT_DISPLAY_INFO = 109;
+    protected static final int EVENT_SIGNAL_INFO = 110;
+    protected static final int EVENT_CDMA_OTA_STATUS_CHANGE = 111;
+    protected static final int EVENT_RESEND_INCALL_MUTE = 112;
+    protected static final int EVENT_MMI_INITIATE = 113;
+    protected static final int EVENT_MMI_COMPLETE = 114;
+    protected static final int EVENT_ECM_TIMER_RESET = 115;
+    protected static final int EVENT_SUBSCRIPTION_INFO_READY = 116;
+    protected static final int EVENT_SUPP_SERVICE_FAILED = 117;
+    protected static final int EVENT_SERVICE_STATE_CHANGED = 118;
+    protected static final int EVENT_POST_DIAL_CHARACTER = 119;
+    protected static final int EVENT_ONHOLD_TONE = 120;
     // FIXME Taken from klp-sprout-dev but setAudioMode was removed in L.
     //private static final int EVENT_RADIO_OFF_OR_NOT_AVAILABLE = 121;
-    private static final int EVENT_TTY_MODE_RECEIVED = 122;
+    protected static final int EVENT_TTY_MODE_RECEIVED = 122;
 
     // Singleton instance
-    private static final CallManager INSTANCE = new CallManager();
+    private static CallManager INSTANCE = null;
 
     // list of registered phones, which are Phone objs
     @UnsupportedAppUsage
@@ -110,7 +110,7 @@ public class CallManager {
     private final ArrayList<Connection> mEmptyConnections = new ArrayList<Connection>();
 
     // mapping of phones to registered handler instances used for callbacks from RIL
-    private final HashMap<Phone, CallManagerHandler> mHandlerMap = new HashMap<>();
+    protected final HashMap<Phone, CallManagerHandler> mHandlerMap = new HashMap<>();
 
     // default phone as the first phone registered, which is Phone obj
     private Phone mDefaultPhone;
@@ -119,7 +119,7 @@ public class CallManager {
     // FIXME Taken from klp-sprout-dev but setAudioMode was removed in L.
     //private boolean mIsEccDialing = false;
 
-    private Object mRegistrantidentifier = new Object();
+    protected Object mRegistrantidentifier = new Object();
 
     // state registrants
     protected final RegistrantList mPreciseCallStateRegistrants
@@ -191,7 +191,7 @@ public class CallManager {
     protected final RegistrantList mTtyModeReceivedRegistrants
     = new RegistrantList();
 
-    private CallManager() {
+    protected CallManager() {
         mPhones = new ArrayList<Phone>();
         mRingingCalls = new ArrayList<Call>();
         mBackgroundCalls = new ArrayList<Call>();
@@ -205,7 +205,19 @@ public class CallManager {
      */
     @UnsupportedAppUsage
     public static CallManager getInstance() {
+        if (INSTANCE == null) {
+            INSTANCE = TelephonyComponentFactory.getInstance()
+                    .inject(TelephonyComponentFactory.class.getName()).makeCallManager();
+        }
         return INSTANCE;
+    }
+
+    /**
+     * Returns all the registered phone objects.
+     * @return all the registered phone objects.
+     */
+    public List<Phone> getAllPhones() {
+        return null;
     }
 
     /**
@@ -442,6 +454,14 @@ public class CallManager {
     }
 
     /**
+     * @return the phone associated with the background call
+     * of a particular subId
+     */
+    public Phone getBgPhone(int subId) {
+        return null;
+    }
+
+    /**
      * @return the phone associated with the ringing call
      */
     @UnsupportedAppUsage
@@ -542,7 +562,7 @@ public class CallManager {
         return mRegistrantidentifier;
     }
 
-    private void registerForPhoneStates(Phone phone) {
+    protected void registerForPhoneStates(Phone phone) {
         // We need to keep a mapping of handler to Phone for proper unregistration.
         // TODO: Clean up this solution as it is just a work around for each Phone instance
         // using the same Handler to register with the RIL. When time permits, we should consider
@@ -654,6 +674,22 @@ public class CallManager {
     }
 
     /**
+     * Answers a ringing or waiting call.
+     *
+     * Active call, if any, go on hold.
+     * If active call can't be held, i.e., a background call of the same channel exists,
+     * the active call will be hang up.
+     *
+     * Answering occurs asynchronously, and final notification occurs via
+     * {@link #registerForPreciseCallStateChanged(android.os.Handler, int,
+     * java.lang.Object) registerForPreciseCallStateChanged()}.
+     *
+     * @exception CallStateException when call is not ringing or waiting
+     */
+    public void acceptCall(Call ringingCall) throws CallStateException {
+    }
+
+    /**
      * Reject (ignore) a ringing call. In GSM, this means UDUB
      * (User Determined User Busy). Reject occurs asynchronously,
      * and final notification occurs via
@@ -675,6 +711,38 @@ public class CallManager {
             Rlog.d(LOG_TAG, "End rejectCall(" +ringingCall + ")");
             Rlog.d(LOG_TAG, toString());
         }
+    }
+
+    /**
+     * Places active call on hold, and makes held call active.
+     * Switch occurs asynchronously and may fail.
+     *
+     * There are 4 scenarios
+     * 1. only active call but no held call, aka, hold
+     * 2. no active call but only held call, aka, unhold
+     * 3. both active and held calls from same phone, aka, swap
+     * 4. active and held calls from different phones, aka, phone swap
+     *
+     * Final notification occurs via
+     * {@link #registerForPreciseCallStateChanged(android.os.Handler, int,
+     * java.lang.Object) registerForPreciseCallStateChanged()}.
+     *
+     * @exception CallStateException if active call is ringing, waiting, or
+     * dialing/alerting, or heldCall can't be active.
+     * In these cases, this operation may not be performed.
+     */
+    public void switchHoldingAndActive(Call heldCall) throws CallStateException {
+    }
+
+    /**
+     * Hangup foreground call and resume the specific background call
+     *
+     * Note: this is noop if there is no foreground call or the heldCall is null
+     *
+     * @param heldCall to become foreground
+     * @throws CallStateException
+     */
+    public void hangupForegroundResumeBackground(Call heldCall) throws CallStateException {
     }
 
     /**
@@ -1939,6 +2007,30 @@ public class CallManager {
     }
 
     /**
+     * @return the connections of active background call
+     * return empty list if there is no active background call
+     */
+    public List<Connection> getBgCallConnections(int subId) {
+        return null;
+    }
+
+    /**
+     * @return the latest connection of active foreground call
+     * return null if there is no active foreground call
+     */
+    public Connection getFgCallLatestConnection() {
+        return null;
+    }
+
+    /**
+     * @return the latest connection of active foreground call
+     * return null if there is no active foreground call
+     */
+    public Connection getFgCallLatestConnection(int subId) {
+        return null;
+    }
+
+    /**
      * @return true if there is at least one Foreground call in disconnected state
      */
     public boolean hasDisconnectedFgCall() {
@@ -2022,7 +2114,7 @@ public class CallManager {
     }
 
     @UnsupportedAppUsage
-    private boolean hasMoreThanOneRingingCall() {
+    protected boolean hasMoreThanOneRingingCall() {
         int count = 0;
         for (Call call : mRingingCalls) {
             if (call.getState().isRinging()) {
@@ -2071,7 +2163,7 @@ public class CallManager {
         return false;
     }
 
-    private class CallManagerHandler extends Handler {
+    protected class CallManagerHandler extends Handler {
         @Override
         public void handleMessage(Message msg) {
 

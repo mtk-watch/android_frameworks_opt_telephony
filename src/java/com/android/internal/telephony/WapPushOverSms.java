@@ -72,16 +72,20 @@ public class WapPushOverSms implements ServiceConnection {
     private static final String TAG = "WAP PUSH";
     private static final boolean DBG = false;
 
+    // MTK-START
+    // Modification for sub class
     @UnsupportedAppUsage
-    private final Context mContext;
-    @UnsupportedAppUsage
-    private IDeviceIdleController mDeviceIdleController;
+    protected final Context mContext;
 
-    private String mWapPushManagerPackage;
+    @UnsupportedAppUsage
+    protected IDeviceIdleController mDeviceIdleController;
+
+    protected String mWapPushManagerPackage;
 
     /** Assigned from ServiceConnection callback on main threaad. */
     @UnsupportedAppUsage
-    private volatile IWapPushManager mWapPushManager;
+    protected volatile IWapPushManager mWapPushManager;
+    // MTK-END
 
     /** Broadcast receiver that binds to WapPushManager when the user unlocks the phone for the
      *  first time after reboot and the credential-encrypted storage is available.
@@ -455,14 +459,20 @@ public class WapPushOverSms implements ServiceConnection {
             && WspTypeDecoder.CONTENT_TYPE_B_MMS.equals(result.mimeType);
     }
 
-    private static boolean shouldParseContentDisposition(int subId) {
+    // MTK-START
+    // Modification for sub class
+    protected static boolean shouldParseContentDisposition(int subId) {
+    // MTK-END
         return SmsManager
                 .getSmsManagerForSubscriptionId(subId)
                 .getCarrierConfigValues()
                 .getBoolean(SmsManager.MMS_CONFIG_SUPPORT_MMS_CONTENT_DISPOSITION, true);
     }
 
-    private void writeInboxMessage(int subId, GenericPdu pdu) {
+    // MTK-START
+    // Modification for sub class
+    protected void writeInboxMessage(int subId, GenericPdu pdu) {
+    // MTK-END
         if (pdu == null) {
             Rlog.e(TAG, "Invalid PUSH PDU");
         }

@@ -55,10 +55,10 @@ public class DcRequest implements Comparable<DcRequest> {
         return o.priority - priority;
     }
 
-    private static final HashMap<Integer, Integer> sApnPriorityMap =
+    protected static final HashMap<Integer, Integer> sApnPriorityMap =
             new HashMap<Integer, Integer>();
 
-    private void initApnPriorities(Context context) {
+    protected void initApnPriorities(Context context) {
         synchronized (sApnPriorityMap) {
             if (sApnPriorityMap.isEmpty()) {
                 String[] networkConfigStrings = context.getResources().getStringArray(

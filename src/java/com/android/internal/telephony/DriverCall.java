@@ -25,7 +25,7 @@ import android.telephony.PhoneNumberUtils;
  * {@hide}
  */
 public class DriverCall implements Comparable<DriverCall> {
-    static final String LOG_TAG = "DriverCall";
+    protected static final String LOG_TAG = "DriverCall";
 
     public enum State {
         @UnsupportedAppUsage

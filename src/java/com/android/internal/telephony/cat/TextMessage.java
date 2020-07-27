@@ -33,11 +33,15 @@ public class TextMessage implements Parcelable {
     public boolean userClear = false;
     public Duration duration = null;
 
+    // MTK-START
     @UnsupportedAppUsage
-    TextMessage() {
+    public TextMessage() {
     }
+    // MTK-END
 
-    private TextMessage(Parcel in) {
+    // MTK-START
+    protected /*private*/ TextMessage(Parcel in) {
+    // MTK-END
         title = in.readString();
         text = in.readString();
         icon = in.readParcelable(null);

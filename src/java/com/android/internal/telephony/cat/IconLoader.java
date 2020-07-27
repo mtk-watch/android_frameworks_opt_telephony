@@ -28,47 +28,54 @@ import android.os.Looper;
 import android.os.Message;
 import java.util.HashMap;
 
+// MTK-START
+import com.android.internal.telephony.TelephonyComponentFactory;
+// MTK-END
 /**
  * Class for loading icons from the SIM card. Has two states: single, for loading
  * one icon. Multi, for loading icons list.
  *
  */
-class IconLoader extends Handler {
+// MTK-START
+public class IconLoader extends Handler {
     // members
-    private int mState = STATE_SINGLE_ICON;
-    private ImageDescriptor mId = null;
-    private Bitmap mCurrentIcon = null;
-    private int mRecordNumber;
-    private IccFileHandler mSimFH = null;
-    private Message mEndMsg = null;
-    private byte[] mIconData = null;
+    protected /*private*/ int mState = STATE_SINGLE_ICON;
+    protected /*private*/ ImageDescriptor mId = null;
+    protected /*private*/ Bitmap mCurrentIcon = null;
+    protected /*private*/ int mRecordNumber;
+    protected /*private*/ IccFileHandler mSimFH = null;
+    protected /*private*/ Message mEndMsg = null;
+    protected /*private*/ byte[] mIconData = null;
     // multi icons state members
-    private int[] mRecordNumbers = null;
-    private int mCurrentRecordIndex = 0;
-    private Bitmap[] mIcons = null;
-    private HashMap<Integer, Bitmap> mIconsCache = null;
+    protected /*private*/ int[] mRecordNumbers = null;
+    protected /*private*/ int mCurrentRecordIndex = 0;
+    protected /*private*/ Bitmap[] mIcons = null;
+    protected /*private*/ HashMap<Integer, Bitmap> mIconsCache = null;
 
-    private static IconLoader sLoader = null;
-    private static HandlerThread sThread = null;
+    // private static IconLoader sLoader = null;
+    private static HashMap<Object, IconLoader> sLoader = null;
+    // private static HandlerThread sThread = null;
+    private static HashMap<Object, HandlerThread> sThread = null;
 
     // Loader state values.
-    private static final int STATE_SINGLE_ICON = 1;
-    private static final int STATE_MULTI_ICONS = 2;
+    protected /*private*/ static final int STATE_SINGLE_ICON = 1;
+    protected /*private*/ static final int STATE_MULTI_ICONS = 2;
 
     // Finished loading single record from a linear-fixed EF-IMG.
-    private static final int EVENT_READ_EF_IMG_RECOED_DONE  = 1;
+    protected /*private*/ static final int EVENT_READ_EF_IMG_RECOED_DONE  = 1;
     // Finished loading single icon from a Transparent DF-Graphics.
-    private static final int EVENT_READ_ICON_DONE           = 2;
+    protected /*private*/ static final int EVENT_READ_ICON_DONE           = 2;
     // Finished loading single colour icon lookup table.
-    private static final int EVENT_READ_CLUT_DONE           = 3;
+    protected /*private*/ static final int EVENT_READ_CLUT_DONE           = 3;
 
     // Color lookup table offset inside the EF.
-    private static final int CLUT_LOCATION_OFFSET = 4;
+    protected /*private*/ static final int CLUT_LOCATION_OFFSET = 4;
     // CLUT entry size, {Red, Green, Black}
-    private static final int CLUT_ENTRY_SIZE = 3;
+    protected /*private*/ static final int CLUT_ENTRY_SIZE = 3;
 
 
-    private IconLoader(Looper looper , IccFileHandler fh) {
+    public /*private*/ IconLoader(Looper looper , IccFileHandler fh) {
+    // MTK-END
         super(looper);
         mSimFH = fh;
 
@@ -76,18 +83,37 @@ class IconLoader extends Handler {
     }
 
     static IconLoader getInstance(Handler caller, IccFileHandler fh) {
-        if (sLoader != null) {
-            return sLoader;
+        if (sLoader != null && sLoader.containsKey(fh)) {
+            return sLoader.get(fh);
         }
         if (fh != null) {
-            sThread = new HandlerThread("Cat Icon Loader");
-            sThread.start();
-            return new IconLoader(sThread.getLooper(), fh);
+            // MTK-START
+            // sThread = new HandlerThread("Cat Icon Loader");
+            // sThread.start();
+            if (sThread == null) {
+                sThread = new HashMap<Object, HandlerThread>(4);
+            }
+            HandlerThread t = new HandlerThread("Cat Icon Loader");
+            sThread.put(fh, t);
+            t.start();
+            // return new IconLoader(sThread.getLooper(), fh);
+            if (sLoader == null) {
+                sLoader = new HashMap<Object, IconLoader>(4);
+            }
+            IconLoader loader = TelephonyComponentFactory.getInstance()
+                    .inject(TelephonyComponentFactory.class.getName())
+                    .makeIconLoader(t.getLooper(), fh);
+            sLoader.put(fh, loader);
+            return loader;
+            // MTK-END
+        } else {
+            return null;
         }
-        return null;
     }
 
-    void loadIcons(int[] recordNumbers, Message msg) {
+    // MTK-START
+    public void loadIcons(int[] recordNumbers, Message msg) {
+    // MTK-END
         if (recordNumbers == null || recordNumbers.length == 0 || msg == null) {
             return;
         }
@@ -100,8 +126,10 @@ class IconLoader extends Handler {
         startLoadingIcon(recordNumbers[0]);
     }
 
+    // MTK-START
     @UnsupportedAppUsage
-    void loadIcon(int recordNumber, Message msg) {
+    public void loadIcon(int recordNumber, Message msg) {
+    // MTK-END
         if (msg == null) {
             return;
         }
@@ -110,7 +138,9 @@ class IconLoader extends Handler {
         startLoadingIcon(recordNumber);
     }
 
-    private void startLoadingIcon(int recordNumber) {
+    // MTK-START
+    protected /*private*/ void startLoadingIcon(int recordNumber) {
+    // MTK-END
         // Reset the load variables.
         mId = null;
         mIconData = null;
@@ -181,7 +211,9 @@ class IconLoader extends Handler {
      * @param rawData byte [] containing Image Instance descriptor as defined in
      * TS 51.011.
      */
-    private boolean handleImageDescriptor(byte[] rawData) {
+    // MTK-START
+    protected /*private*/ boolean handleImageDescriptor(byte[] rawData) {
+    // MTK-END
         mId = ImageDescriptor.parse(rawData, 1);
         if (mId == null) {
             return false;
@@ -190,7 +222,9 @@ class IconLoader extends Handler {
     }
 
     // Start reading color lookup table from SIM card.
-    private void readClut() {
+    // MTK-START
+    protected /*private*/ void readClut() {
+    // MTK-END
         int length = mIconData[3] * CLUT_ENTRY_SIZE;
         Message msg = obtainMessage(EVENT_READ_CLUT_DONE);
         mSimFH.loadEFImgTransparent(mId.mImageId,
@@ -199,7 +233,9 @@ class IconLoader extends Handler {
     }
 
     // Start reading Image Descriptor from SIM card.
-    private void readId() {
+    // MTK-START
+    protected /*private*/ void readId() {
+    // MTK-END
         if (mRecordNumber < 0) {
             mCurrentIcon = null;
             postIcon();
@@ -210,13 +246,17 @@ class IconLoader extends Handler {
     }
 
     // Start reading icon bytes array from SIM card.
-    private void readIconData() {
+    // MTK-START
+    protected /*private*/ void readIconData() {
+    // MTK-END
         Message msg = obtainMessage(EVENT_READ_ICON_DONE);
         mSimFH.loadEFImgTransparent(mId.mImageId, 0, 0, mId.mLength ,msg);
     }
 
     // When all is done pass icon back to caller.
-    private void postIcon() {
+    // MTK-START
+    protected /*private*/ void postIcon() {
+    // MTK-END
         if (mState == STATE_SINGLE_ICON) {
             mEndMsg.obj = mCurrentIcon;
             mEndMsg.sendToTarget();
@@ -365,12 +405,31 @@ class IconLoader extends Handler {
         return mask;
     }
     public void dispose() {
-        mSimFH = null;
+        // MTK-START
+        if (sThread != null && sThread.containsKey(mSimFH)) {
+            HandlerThread t = sThread.get(mSimFH);
+            if (t != null) {
+                t.quit();
+                t = null;
+            }
+            sThread.remove(mSimFH);
+        }
+        /*
         if (sThread != null) {
             sThread.quit();
             sThread = null;
         }
+        */
+        // MTK-END
         mIconsCache = null;
-        sLoader = null;
+        // MTK-START
+        // sLoader = null;
+        if (sLoader != null && sLoader.containsKey(mSimFH)) {
+            IconLoader loader = sLoader.get(mSimFH);
+            loader = null;
+            sLoader.remove(mSimFH);
+        }
+        mSimFH = null;
+        // MTK-END
     }
 }

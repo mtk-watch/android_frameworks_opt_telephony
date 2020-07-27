@@ -98,19 +98,27 @@ import java.util.stream.Collectors;
  */
 public class SubscriptionController extends ISub.Stub {
     private static final String LOG_TAG = "SubscriptionController";
-    private static final boolean DBG = true;
-    private static final boolean VDBG = Rlog.isLoggable(LOG_TAG, Log.VERBOSE);
-    private static final boolean DBG_CACHE = false;
+    // MTK-START: add on
+    protected static final boolean DBG = true;
+    protected static final boolean VDBG = Rlog.isLoggable(LOG_TAG, Log.VERBOSE);
+    protected static final boolean DBG_CACHE = false;
+    // MTK-END
     private static final int DEPRECATED_SETTING = -1;
     private static final ParcelUuid INVALID_GROUP_UUID =
             ParcelUuid.fromString(CarrierConfigManager.REMOVE_GROUP_UUID_STRING);
-    private final LocalLog mLocalLog = new LocalLog(200);
+
+    // MTK-START: add on
+    protected final LocalLog mLocalLog = new LocalLog(200);
+    // MTK-END
 
     // Lock that both mCacheActiveSubInfoList and mCacheOpportunisticSubInfoList use.
     private Object mSubInfoListLock = new Object();
 
     /* The Cache of Active SubInfoRecord(s) list of currently in use SubInfoRecord(s) */
-    private final List<SubscriptionInfo> mCacheActiveSubInfoList = new ArrayList<>();
+    // MTK-START: add on
+    protected /*private*/ final List<SubscriptionInfo> mCacheActiveSubInfoList =
+            new ArrayList<>();
+    // MTK-END
 
     /* Similar to mCacheActiveSubInfoList but only caching opportunistic subscriptions. */
     private List<SubscriptionInfo> mCacheOpportunisticSubInfoList = new ArrayList<>();
@@ -139,12 +147,16 @@ public class SubscriptionController extends ISub.Stub {
 
     private AppOpsManager mAppOps;
 
+    // FIXME: Does not allow for multiple subs in a slot and change to SparseArray
     // Each slot can have multiple subs.
-    private static Map<Integer, ArrayList<Integer>> sSlotIndexToSubIds = new ConcurrentHashMap<>();
-    private static int mDefaultFallbackSubId = SubscriptionManager.INVALID_SUBSCRIPTION_ID;
+    // MTK-START: add on
+    protected /*private*/ static Map<Integer, ArrayList<Integer>> sSlotIndexToSubIds =
+            new ConcurrentHashMap<>();
+    protected /*private*/ static int mDefaultFallbackSubId =
+            SubscriptionManager.INVALID_SUBSCRIPTION_ID;
     @UnsupportedAppUsage
-    private static int mDefaultPhoneId = SubscriptionManager.DEFAULT_PHONE_INDEX;
-
+    protected /*private*/ static int mDefaultPhoneId = SubscriptionManager.DEFAULT_PHONE_INDEX;
+    // MTK-END
     @UnsupportedAppUsage
     private int[] colorArr;
     private long mLastISubServiceRegTime;
@@ -152,7 +164,12 @@ public class SubscriptionController extends ISub.Stub {
     public static SubscriptionController init(Phone phone) {
         synchronized (SubscriptionController.class) {
             if (sInstance == null) {
-                sInstance = new SubscriptionController(phone);
+                // MTK-START: add on
+                // sInstance = new SubscriptionController(phone);
+                sInstance = TelephonyComponentFactory.getInstance()
+                        .inject(TelephonyComponentFactory.class.getName())
+                        .makeSubscriptionController(phone);
+                // MTK-END
             } else {
                 Log.wtf(LOG_TAG, "init() called multiple times!  sInstance = " + sInstance);
             }
@@ -163,7 +180,12 @@ public class SubscriptionController extends ISub.Stub {
     public static SubscriptionController init(Context c, CommandsInterface[] ci) {
         synchronized (SubscriptionController.class) {
             if (sInstance == null) {
-                sInstance = new SubscriptionController(c);
+                // MTK-START: add on
+                // sInstance = new SubscriptionController(c);
+                sInstance = TelephonyComponentFactory.getInstance()
+                        .inject(TelephonyComponentFactory.class.getName())
+                        .makeSubscriptionController(c, ci);
+                // MTK-END
             } else {
                 Log.wtf(LOG_TAG, "init() called multiple times!  sInstance = " + sInstance);
             }
@@ -230,7 +252,9 @@ public class SubscriptionController extends ISub.Stub {
      * TODO: SIM_SLOT_INDEX is based on current state and should not even be persisted in the
      * database.
      */
-    private void clearSlotIndexForSubInfoRecords() {
+    // MTK-START: add on
+    protected /*private*/ void clearSlotIndexForSubInfoRecords() {
+    // MTK-END
         if (mContext == null) {
             logel("[clearSlotIndexForSubInfoRecords] TelephonyManager or mContext is null");
             return;
@@ -242,7 +266,9 @@ public class SubscriptionController extends ISub.Stub {
         mContext.getContentResolver().update(SubscriptionManager.CONTENT_URI, value, null, null);
     }
 
-    private SubscriptionController(Phone phone) {
+    // MTK-START: add on
+    protected /*private*/ SubscriptionController(Phone phone) {
+    // MTK-END
         mContext = phone.getContext();
         mAppOps = mContext.getSystemService(AppOpsManager.class);
 
@@ -258,8 +284,10 @@ public class SubscriptionController extends ISub.Stub {
         if (DBG) logdl("[SubscriptionController] init by Phone");
     }
 
+    // MTK-START: add on
     @UnsupportedAppUsage
-    private void enforceModifyPhoneState(String message) {
+    protected /*private*/ void enforceModifyPhoneState(String message) {
+    // MTK-END
         mContext.enforceCallingOrSelfPermission(
                 android.Manifest.permission.MODIFY_PHONE_STATE, message);
     }
@@ -311,8 +339,10 @@ public class SubscriptionController extends ISub.Stub {
      * @param cursor
      * @return the query result of desired SubInfoRecord
      */
+    // MTK-START: add on
     @UnsupportedAppUsage
-    private SubscriptionInfo getSubInfoRecord(Cursor cursor) {
+    protected /*private*/ SubscriptionInfo getSubInfoRecord(Cursor cursor) {
+    // MTK-END
         int id = cursor.getInt(cursor.getColumnIndexOrThrow(
                 SubscriptionManager.UNIQUE_KEY_SUBSCRIPTION_ID));
         String iccId = cursor.getString(cursor.getColumnIndexOrThrow(
@@ -402,7 +432,10 @@ public class SubscriptionController extends ISub.Stub {
         return info;
     }
 
-    private String getOptionalStringFromCursor(Cursor cursor, String column, String defaultVal) {
+    // MTK-START: add on
+    protected /*private*/ String getOptionalStringFromCursor(Cursor cursor, String column,
+            String defaultVal) {
+    // MTK-END
         // Return defaultVal if the column doesn't exist.
         int columnIndex = cursor.getColumnIndex(column);
         return (columnIndex == -1) ? defaultVal : cursor.getString(columnIndex);
@@ -1209,7 +1242,9 @@ public class SubscriptionController extends ISub.Stub {
         return 0;
     }
 
-    private void updateDefaultSubIdsIfNeeded(int newDefault, int subscriptionType) {
+    // MTK-START: add on
+    protected /*private*/ void updateDefaultSubIdsIfNeeded(int newDefault, int subscriptionType) {
+    // MTK-END
         if (DBG) {
             logdl("[updateDefaultSubIdsIfNeeded] newDefault=" + newDefault
                     + ", subscriptionType=" + subscriptionType);
@@ -1377,8 +1412,10 @@ public class SubscriptionController extends ISub.Stub {
                 SubscriptionManager.SUBSCRIPTION_TYPE_LOCAL_SIM);
     }
 
-    Uri insertEmptySubInfoRecord(String uniqueId, String displayName, int slotIndex,
+    // MTK-START: add on
+    protected Uri insertEmptySubInfoRecord(String uniqueId, String displayName, int slotIndex,
             int subscriptionType) {
+    // MTK-END
         ContentResolver resolver = mContext.getContentResolver();
         ContentValues value = new ContentValues();
         value.put(SubscriptionManager.ICC_ID, uniqueId);
@@ -2269,8 +2306,10 @@ public class SubscriptionController extends ISub.Stub {
         }
     }
 
+    // MTK-START: add on
     @UnsupportedAppUsage
-    private void updateAllDataConnectionTrackers() {
+    protected /*private*/ void updateAllDataConnectionTrackers() {
+    // MTK-END
         // Tell Phone Proxies to update data connection tracker
         int len = sPhones.length;
         if (DBG) logd("[updateAllDataConnectionTrackers] sPhones.length=" + len);
@@ -2280,8 +2319,10 @@ public class SubscriptionController extends ISub.Stub {
         }
     }
 
+    // MTK-START: add on
     @UnsupportedAppUsage
-    private void broadcastDefaultDataSubIdChanged(int subId) {
+    public /*private*/ void broadcastDefaultDataSubIdChanged(int subId) {
+    // MTK-END
         // Broadcast an Intent for default data sub change
         if (DBG) logdl("[broadcastDefaultDataSubIdChanged] subId=" + subId);
         Intent intent = new Intent(TelephonyIntents.ACTION_DEFAULT_DATA_SUBSCRIPTION_CHANGED);
@@ -2296,8 +2337,10 @@ public class SubscriptionController extends ISub.Stub {
      * sub is set as default subId. If two or more  sub's are active
      * the first sub is set as default subscription
      */
+    // MTK-START: add on
     @UnsupportedAppUsage
-    private void setDefaultFallbackSubId(int subId, int subscriptionType) {
+    public /*private*/ void setDefaultFallbackSubId(int subId, int subscriptionType) {
+    // MTK-END
         if (subId == SubscriptionManager.DEFAULT_SUBSCRIPTION_ID) {
             throw new RuntimeException("setDefaultSubId called with DEFAULT_SUB_ID");
         }
@@ -2678,7 +2721,9 @@ public class SubscriptionController extends ISub.Stub {
         return resultValue;
     }
 
-    private static void printStackTrace(String msg) {
+    // MTK-START: add on
+    protected /*private*/ static void printStackTrace(String msg) {
+    // MTK-END
         RuntimeException re = new RuntimeException();
         slogd("StackTrace - " + msg);
         StackTraceElement[] st = re.getStackTrace();
@@ -3554,7 +3599,10 @@ public class SubscriptionController extends ISub.Stub {
         }
     }
 
-    private synchronized boolean addToSubIdList(int slotIndex, int subId, int subscriptionType) {
+    // MTK-START: add on
+    protected /*private*/ synchronized boolean addToSubIdList(int slotIndex, int subId,
+            int subscriptionType) {
+    // MTK-END
         ArrayList<Integer> subIdsList = sSlotIndexToSubIds.get(slotIndex);
         if (subIdsList == null) {
             subIdsList = new ArrayList<>();
@@ -3578,7 +3626,9 @@ public class SubscriptionController extends ISub.Stub {
         return true;
     }
 
-    private boolean isSubscriptionForRemoteSim(int subscriptionType) {
+    // MTK-START: add on
+    protected /*private*/ boolean isSubscriptionForRemoteSim(int subscriptionType) {
+    // MTK-END
         return subscriptionType == SubscriptionManager.SUBSCRIPTION_TYPE_REMOTE_SIM;
     }
 

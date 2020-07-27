@@ -35,7 +35,9 @@ import com.android.internal.util.XmlUtils;
 /**
  * {@hide}
  */
-class VoiceMailConstants {
+// MTK-START: add on
+public class VoiceMailConstants {
+// MTK-END
     private HashMap<String, String[]> CarrierVmMap;
 
 
@@ -53,7 +55,9 @@ class VoiceMailConstants {
         loadVoiceMail();
     }
 
-    boolean containsCarrier(String carrier) {
+    // MTK-START: add on
+    public boolean containsCarrier(String carrier) {
+    // MTK-END
         return CarrierVmMap.containsKey(carrier);
     }
 

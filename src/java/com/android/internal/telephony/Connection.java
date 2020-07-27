@@ -212,7 +212,7 @@ public abstract class Connection {
     protected String mPostDialString;      // outgoing calls only
     protected int mNextPostDialChar;       // index into postDialString
 
-    protected int mCause = DisconnectCause.NOT_DISCONNECTED;
+    public int mCause = DisconnectCause.NOT_DISCONNECTED;
     protected PostDialState mPostDialState = PostDialState.NOT_STARTED;
 
     @UnsupportedAppUsage

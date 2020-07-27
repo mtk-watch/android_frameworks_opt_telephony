@@ -36,12 +36,13 @@ public class DeliveryInd extends GenericPdu {
         setMessageType(PduHeaders.MESSAGE_TYPE_DELIVERY_IND);
     }
 
+    /*MTK Change access type*/
     /**
      * Constructor with given headers.
      *
      * @param headers Headers for this PDU.
      */
-    DeliveryInd(PduHeaders headers) {
+    public DeliveryInd(PduHeaders headers) {
         super(headers);
     }
 

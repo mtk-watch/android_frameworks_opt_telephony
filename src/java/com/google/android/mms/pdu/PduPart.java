@@ -93,9 +93,12 @@ public class PduPart {
       * "attachment" instead of Attachment<Octet 129>.
       * "inline" instead of Inline<Octet 130>.
       */
-     static final byte[] DISPOSITION_FROM_DATA = "from-data".getBytes();
-     static final byte[] DISPOSITION_ATTACHMENT = "attachment".getBytes();
-     static final byte[] DISPOSITION_INLINE = "inline".getBytes();
+     /*MTK Change access type*/
+     public static final byte[] DISPOSITION_FROM_DATA = "from-data".getBytes();
+     /*MTK Change access type*/
+     public static final byte[] DISPOSITION_ATTACHMENT = "attachment".getBytes();
+     /*MTK Change access type*/
+     public static final byte[] DISPOSITION_INLINE = "inline".getBytes();
 
      /**
       * Content-Disposition value.
@@ -104,10 +107,11 @@ public class PduPart {
      public static final int P_DISPOSITION_ATTACHMENT = 0x81;
      public static final int P_DISPOSITION_INLINE     = 0x82;
 
+     /*MTK Change access type*/
      /**
       * Header of part.
       */
-     private Map<Integer, Object> mPartHeader = null;
+     protected Map<Integer, Object> mPartHeader = null;
 
      /**
       * Data uri.

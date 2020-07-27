@@ -33,12 +33,13 @@ public class SendConf extends GenericPdu {
         setMessageType(PduHeaders.MESSAGE_TYPE_SEND_CONF);
     }
 
+    /*MTK Change access type*/
     /**
      * Constructor with given headers.
      *
      * @param headers Headers for this PDU.
      */
-    SendConf(PduHeaders headers) {
+    public SendConf(PduHeaders headers) {
         super(headers);
     }
 

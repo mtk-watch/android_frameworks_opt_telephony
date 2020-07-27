@@ -82,7 +82,9 @@ public class DeviceStateMonitor extends Handler {
     private static final int WIFI_UNAVAILABLE = 0;
     private static final int WIFI_AVAILABLE = 1;
 
-    private final Phone mPhone;
+    // MTK-START addon
+    protected /*private*/ final Phone mPhone;
+    // MTK-END
 
     private final LocalLog mLocalLog = new LocalLog(100);
 
@@ -126,20 +128,26 @@ public class DeviceStateMonitor extends Handler {
     /**
      * Flag for wifi/usb/bluetooth tethering turned on or not
      */
-    private boolean mIsTetheringOn;
+    // MTK-START addon
+    protected /*private*/ boolean mIsTetheringOn;
+    // MTK-END
 
     /**
      * Screen state provided by Display Manager. True indicates one of the screen is on, otherwise
      * all off.
      */
-    private boolean mIsScreenOn;
+    // MTK-START addon
+    protected /*private*/ boolean mIsScreenOn;
+    // MTK-END
 
     /**
      * Indicating the device is plugged in and is supplying sufficient power that the battery level
      * is going up (or the battery is fully charged). See BatteryManager.isCharging() for the
      * details
      */
-    private boolean mIsCharging;
+    // MTK-START addon
+    protected /*private*/ boolean mIsCharging;
+    // MTK-END
 
     /**
      * Flag for device power save mode. See PowerManager.isPowerSaveMode() for the details.
@@ -153,7 +161,9 @@ public class DeviceStateMonitor extends Handler {
      * device is idle (e.g. screen is off and not doing tethering in the background). Note this
      * doesn't mean no data is expected.
      */
-    private boolean mIsLowDataExpected;
+    // MTK-START addon
+    protected /*private*/ boolean mIsLowDataExpected;
+    // MTK-END
 
     /**
      * Wifi is connected. True means both that cellular is likely to be asleep when the screen is
@@ -277,7 +287,9 @@ public class DeviceStateMonitor extends Handler {
     /**
      * @return True if low data is expected
      */
-    private boolean isLowDataExpected() {
+    // MTK-START addon
+    protected /*private*/ boolean isLowDataExpected() {
+    // MTK-END
         return !mIsCharging && !mIsTetheringOn && !mIsScreenOn;
     }
 

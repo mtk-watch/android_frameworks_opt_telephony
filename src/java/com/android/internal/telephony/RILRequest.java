@@ -45,11 +45,11 @@ public class RILRequest {
 
     //***** Instance Variables
     @UnsupportedAppUsage
-    int mSerial;
+    public int mSerial;
     @UnsupportedAppUsage
-    int mRequest;
+    public int mRequest;
     @UnsupportedAppUsage
-    Message mResult;
+    public Message mResult;
     RILRequest mNext;
     int mWakeLockType;
     WorkSource mWorkSource;
@@ -188,7 +188,7 @@ public class RILRequest {
     }
 
     @UnsupportedAppUsage
-    String serialString() {
+    public String serialString() {
         //Cheesy way to do %04d
         StringBuilder sb = new StringBuilder(8);
         String sn;
@@ -221,8 +221,14 @@ public class RILRequest {
         }
 
         if (mResult != null) {
-            AsyncResult.forMessage(mResult, ret, ex);
-            mResult.sendToTarget();
+            if (mResult.getTarget() != null) {
+                AsyncResult.forMessage(mResult, ret, ex);
+                mResult.sendToTarget();
+            } else {
+                Rlog.e(LOG_TAG, "Target is null, do not send the message! "
+                        + RIL.requestToString(mRequest) + ", "
+                        + serialString());
+            }
         }
     }
 }

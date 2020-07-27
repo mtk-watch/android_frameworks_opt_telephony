@@ -40,7 +40,9 @@ public class IsimUiccRecords extends IccRecords implements IsimRecords {
 
     private static final boolean DBG = true;
     private static final boolean VDBG = false; // STOPSHIP if true
-    private static final boolean DUMP_RECORDS = false;  // Note: PII is logged when this is true
+    // MTK-START: add on
+    protected static final boolean DUMP_RECORDS = false;  // Note: PII is logged when this is true
+    // MTK-END
                                                         // STOPSHIP if true
     public static final String INTENT_ISIM_REFRESH = "com.android.intent.isim_refresh";
 
@@ -54,8 +56,10 @@ public class IsimUiccRecords extends IccRecords implements IsimRecords {
     private String mIsimDomain;             // IMS home network domain name
     @UnsupportedAppUsage
     private String[] mIsimImpu;             // IMS public user identity(s)
+    // MTK-START: add on
     @UnsupportedAppUsage
-    private String mIsimIst;                // IMS Service Table
+    protected String mIsimIst;                // IMS Service Table
+    // MTK-END
     @UnsupportedAppUsage
     private String[] mIsimPcscf;            // IMS Proxy Call Session Control Function
     @UnsupportedAppUsage
@@ -195,7 +199,9 @@ public class IsimUiccRecords extends IccRecords implements IsimRecords {
         mLoaded.set(false);
     }
 
-    private class EfIsimImpiLoaded implements IccRecords.IccRecordLoaded {
+    // MTK-START: add on
+    public class EfIsimImpiLoaded implements IccRecords.IccRecordLoaded {
+    // MTK-END
         public String getEfName() {
             return "EF_ISIM_IMPI";
         }
@@ -206,7 +212,9 @@ public class IsimUiccRecords extends IccRecords implements IsimRecords {
         }
     }
 
-    private class EfIsimImpuLoaded implements IccRecords.IccRecordLoaded {
+    // MTK-START: add on
+    public class EfIsimImpuLoaded implements IccRecords.IccRecordLoaded {
+    // MTK-END
         public String getEfName() {
             return "EF_ISIM_IMPU";
         }
@@ -223,7 +231,9 @@ public class IsimUiccRecords extends IccRecords implements IsimRecords {
         }
     }
 
-    private class EfIsimDomainLoaded implements IccRecords.IccRecordLoaded {
+    // MTK-START: add on
+    public class EfIsimDomainLoaded implements IccRecords.IccRecordLoaded {
+    // MTK-END
         public String getEfName() {
             return "EF_ISIM_DOMAIN";
         }
@@ -234,7 +244,9 @@ public class IsimUiccRecords extends IccRecords implements IsimRecords {
         }
     }
 
-    private class EfIsimIstLoaded implements IccRecords.IccRecordLoaded {
+    // MTK-START: add on
+    public class EfIsimIstLoaded implements IccRecords.IccRecordLoaded {
+    // MTK-END
         public String getEfName() {
             return "EF_ISIM_IST";
         }
@@ -244,7 +256,9 @@ public class IsimUiccRecords extends IccRecords implements IsimRecords {
             if (DUMP_RECORDS) log("EF_IST=" + mIsimIst);
         }
     }
-    private class EfIsimPcscfLoaded implements IccRecords.IccRecordLoaded {
+    // MTK-START: add on
+    public class EfIsimPcscfLoaded implements IccRecords.IccRecordLoaded {
+    // MTK-END
         public String getEfName() {
             return "EF_ISIM_PCSCF";
         }

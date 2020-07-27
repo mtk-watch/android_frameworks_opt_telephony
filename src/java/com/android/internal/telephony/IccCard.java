@@ -294,4 +294,46 @@ public class IccCard {
         ret.exception = new RuntimeException("No valid IccCard");
         onComplete.sendToTarget();
     }
+
+    // MTK-START: add on
+    /**
+     * [CMCC DUAL SIM DEPENDENCY LOCK]
+     * Use to repolling icc card status (Used by SIM ME lock related enhancement feature)
+     *
+     * @param needIntent indicated need an Intent to notify needed to unlock another SIM or not.
+     *                   if yes, will broadcast TelephonyIntents.ACTION_UNLOCK_SIM_LOCK to notify.
+     *                   if no, will notify by original TelephonyIntents.ACTION_SIM_STATE_CHANGED.
+     */
+    public void repollIccStateForModemSmlChangeFeatrue(boolean needIntent) {
+    }
+
+    /**
+     * Use to get SIM card type, such as "SIM" or "USIM".
+     */
+    public String getIccCardType() {
+        return null;
+    }
+
+    /**
+     * Notifies handler of FDN setting changed.
+     */
+    public void registerForFdnChanged(Handler h, int what, Object obj) {
+    }
+
+    public void unregisterForFdnChanged(Handler h){
+    }
+
+    /**
+     * Send a command APDU through SIM_IO, add for NFC module.
+     */
+    public void iccExchangeSimIOEx(int fileID, int command,
+            int p1, int p2, int p3, String pathID, String data, String pin2, Message onComplete) {
+    }
+
+    /**
+     * Get ATR, add for NFC module.
+     */
+    public void iccGetAtr(Message onComplete) {
+    }
+    // MTK-END
 }

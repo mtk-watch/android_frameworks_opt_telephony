@@ -22,19 +22,19 @@ import java.util.HashSet;
  * The class to describe the reasons of allowing or disallowing to establish a data connection.
  */
 public class DataConnectionReasons {
-    private HashSet<DataDisallowedReasonType> mDataDisallowedReasonSet = new HashSet<>();
+    public HashSet<DataDisallowedReasonType> mDataDisallowedReasonSet = new HashSet<>();
     private DataAllowedReasonType mDataAllowedReason = DataAllowedReasonType.NONE;
 
     public DataConnectionReasons() {}
 
-    void add(DataDisallowedReasonType reason) {
+    public void add(DataDisallowedReasonType reason) {
         // Adding a disallowed reason will clean up the allowed reason because they are
         // mutual exclusive.
         mDataAllowedReason = DataAllowedReasonType.NONE;
         mDataDisallowedReasonSet.add(reason);
     }
 
-    void add(DataAllowedReasonType reason) {
+    public void add(DataAllowedReasonType reason) {
         // Adding an allowed reason will clean up the disallowed reasons because they are
         // mutual exclusive.
         mDataDisallowedReasonSet.clear();
@@ -61,16 +61,16 @@ public class DataConnectionReasons {
         return reasonStr.toString();
     }
 
-    void copyFrom(DataConnectionReasons reasons) {
+    public void copyFrom(DataConnectionReasons reasons) {
         this.mDataDisallowedReasonSet = reasons.mDataDisallowedReasonSet;
         this.mDataAllowedReason = reasons.mDataAllowedReason;
     }
 
-    boolean allowed() {
+    public boolean allowed() {
         return mDataDisallowedReasonSet.size() == 0;
     }
 
-    boolean contains(DataDisallowedReasonType reason) {
+    public boolean contains(DataDisallowedReasonType reason) {
         return mDataDisallowedReasonSet.contains(reason);
     }
 
@@ -84,11 +84,11 @@ public class DataConnectionReasons {
         return mDataDisallowedReasonSet.size() == 1 && contains(reason);
     }
 
-    boolean contains(DataAllowedReasonType reason) {
+    public boolean contains(DataAllowedReasonType reason) {
         return reason == mDataAllowedReason;
     }
 
-    boolean containsHardDisallowedReasons() {
+    public boolean containsHardDisallowedReasons() {
         for (DataDisallowedReasonType reason : mDataDisallowedReasonSet) {
             if (reason.isHardReason()) {
                 return true;
@@ -115,7 +115,22 @@ public class DataConnectionReasons {
         RADIO_DISABLED_BY_CARRIER(true),
         APN_NOT_CONNECTABLE(true),
         ON_IWLAN(true),
-        IN_ECBM(true);
+        IN_ECBM(true),
+        MTK_FDN_ENABLED(true),
+        // Multi-PS attach
+        MTK_NOT_ALLOWED(true),
+        // Located PLMN changed
+        MTK_LOCATED_PLMN_CHANGED(true),
+        // M: Vsim
+        MTK_NON_VSIM_PDN_NOT_ALLOWED(true),
+        // M: Temp data switch
+        MTK_TEMP_DATA_SWITCH_NOT_ALLOWED(true),
+        // M: Data retry requirement for Telcel and Telstra operator
+        MTK_DATA_RETRY_NOT_ALLOWED(true),
+        // M: operator defined PCO value
+        MTK_PCO_NOT_ALLOWED(true),
+        // M: Sim Me Lock
+        MTK_SIM_ME_LOCK_NOT_ALLOWED(true);
 
         private boolean mIsHardReason;
 
@@ -129,7 +144,7 @@ public class DataConnectionReasons {
     }
 
     // Data allowed reasons. There will be only one reason if data is allowed.
-    enum DataAllowedReasonType {
+    public enum DataAllowedReasonType {
         // Note that unlike disallowed reasons, we only have one allowed reason every time
         // when we check data is allowed or not. The order of these allowed reasons is very
         // important. The lower ones take precedence over the upper ones.

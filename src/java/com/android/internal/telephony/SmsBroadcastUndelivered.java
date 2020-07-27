@@ -25,6 +25,9 @@ import android.content.IntentFilter;
 import android.database.Cursor;
 import android.database.SQLException;
 import android.os.PersistableBundle;
+// MTK_START: Revise for telephony add on
+import android.os.SystemProperties;
+// MTK-END
 import android.os.UserManager;
 import android.telephony.CarrierConfigManager;
 import android.telephony.Rlog;
@@ -37,6 +40,13 @@ import com.android.internal.telephony.metrics.TelephonyMetrics;
 import java.util.HashMap;
 import java.util.HashSet;
 
+// MTK-START
+// Revise for telephony add on
+import dalvik.system.PathClassLoader;
+import java.lang.reflect.Method;
+// MTK-END
+
+
 /**
  * Called when the credential-encrypted storage is unlocked, collecting all acknowledged messages
  * and deleting any partial message segments older than 7 days. Called from a worker thread to
@@ -46,10 +56,14 @@ import java.util.HashSet;
  */
 public class SmsBroadcastUndelivered {
     private static final String TAG = "SmsBroadcastUndelivered";
-    private static final boolean DBG = InboundSmsHandler.DBG;
+    // MTK-START
+    // Modification for sub class
+    protected static final boolean DBG = InboundSmsHandler.DBG;
 
     /** Delete any partial message segments older than 7 days. */
-    static final long DEFAULT_PARTIAL_SEGMENT_EXPIRE_AGE = (long) (60 * 60 * 1000) * 24 * 7;
+    protected static final long DEFAULT_PARTIAL_SEGMENT_EXPIRE_AGE =
+            (long) (60 * 60 * 1000) * 24 * 7;
+    // MTK-END
 
     /**
      * Query projection for dispatching pending messages at boot time.
@@ -71,13 +85,19 @@ public class SmsBroadcastUndelivered {
     private static SmsBroadcastUndelivered instance;
 
     /** Content resolver to use to access raw table from SmsProvider. */
-    private final ContentResolver mResolver;
+    // MTK-START
+    // Modification for sub class
+    protected final ContentResolver mResolver;
 
     /** Handler for 3GPP-format messages (may be null). */
-    private final GsmInboundSmsHandler mGsmInboundSmsHandler;
+    protected final GsmInboundSmsHandler mGsmInboundSmsHandler;
 
     /** Handler for 3GPP2-format messages (may be null). */
-    private final CdmaInboundSmsHandler mCdmaInboundSmsHandler;
+    protected final CdmaInboundSmsHandler mCdmaInboundSmsHandler;
+
+    /** MtkSmsBroadcastUndelivered class */
+    private static Class<?> sMtkSmsBroadcastUndelivered = getMtkSmsBroadcastUndelivered();
+    // MTK-END
 
     /** Broadcast receiver that processes the raw table when the user unlocks the phone for the
      *  first time after reboot and the credential-encrypted storage is available.
@@ -125,9 +145,12 @@ public class SmsBroadcastUndelivered {
         }
     }
 
+    // MTK-START
+    // Modification for sub class
     @UnsupportedAppUsage
-    private SmsBroadcastUndelivered(Context context, GsmInboundSmsHandler gsmInboundSmsHandler,
+    protected SmsBroadcastUndelivered(Context context, GsmInboundSmsHandler gsmInboundSmsHandler,
             CdmaInboundSmsHandler cdmaInboundSmsHandler) {
+    // MTK-END
         mResolver = context.getContentResolver();
         mGsmInboundSmsHandler = gsmInboundSmsHandler;
         mCdmaInboundSmsHandler = cdmaInboundSmsHandler;
@@ -148,6 +171,23 @@ public class SmsBroadcastUndelivered {
      */
     static void scanRawTable(Context context, CdmaInboundSmsHandler cdmaInboundSmsHandler,
             GsmInboundSmsHandler gsmInboundSmsHandler, long oldMessageTimestamp) {
+        // MTK-START
+        if (sMtkSmsBroadcastUndelivered != null) {
+            try {
+                Class[] argTypes = new Class[] { Context.class , CdmaInboundSmsHandler.class,
+                        GsmInboundSmsHandler.class, long.class };
+                Method extScanRawTableMethod = sMtkSmsBroadcastUndelivered
+                        .getDeclaredMethod("scanRawTable",argTypes);
+                Object[] params = { context, cdmaInboundSmsHandler,
+                        gsmInboundSmsHandler, oldMessageTimestamp };
+                extScanRawTableMethod.setAccessible(true);
+                extScanRawTableMethod.invoke(null, params);
+                return;
+            } catch (Exception e) {
+                Rlog.e(TAG, "No MtkSmsBroadcastUndelivered! Used AOSP for instead!");
+            }
+        }
+        // MTK-END
         if (DBG) Rlog.d(TAG, "scanning raw table for undelivered messages");
         long startTime = System.nanoTime();
         ContentResolver contentResolver = context.getContentResolver();
@@ -282,6 +322,22 @@ public class SmsBroadcastUndelivered {
             return DEFAULT_PARTIAL_SEGMENT_EXPIRE_AGE;
         }
     }
+
+    // MTK-START
+    // Revise for telephony add-on
+    private static Class<?> getMtkSmsBroadcastUndelivered() {
+        if (SystemProperties.get("ro.vendor.mtk_telephony_add_on_policy", "0").equals("0")) {
+            try {
+                String className = "com.mediatek.internal.telephony.MtkSmsBroadcastUndelivered";
+                Class<?> mtkSmsBroadcastUndeliveredClass = Class.forName(className);
+                return mtkSmsBroadcastUndeliveredClass;
+            } catch (Exception e) {
+                Rlog.e(TAG, "No MtkSmsBroadcastUndeliveredClass! Used AOSP for instead!");
+            }
+        }
+        return null;
+    }
+    // MTK-END
 
     /**
      * Used as the HashMap key for matching concatenated message segments.

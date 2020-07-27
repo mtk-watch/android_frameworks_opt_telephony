@@ -40,12 +40,13 @@ public class AcknowledgeInd extends GenericPdu {
         setTransactionId(transactionId);
     }
 
+    /*MTK Change access type*/
     /**
      * Constructor with given headers.
      *
      * @param headers Headers for this PDU.
      */
-    AcknowledgeInd(PduHeaders headers) {
+    public AcknowledgeInd(PduHeaders headers) {
         super(headers);
     }
 

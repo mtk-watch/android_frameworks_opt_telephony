@@ -54,16 +54,18 @@ public class RuimRecords extends IccRecords {
 
     // ***** Instance Variables
 
-    private String mMyMobileNumber;
-    private String mMin2Min1;
+    protected String mMyMobileNumber;
+    protected String mMin2Min1;
 
-    private String mPrlVersion;
+    protected String mPrlVersion;
     // From CSIM application
     @UnsupportedAppUsage
     private byte[] mEFpl = null;
     @UnsupportedAppUsage
     private byte[] mEFli = null;
-    boolean mCsimSpnDisplayCondition = false;
+    // MTK-START: add on
+    protected boolean mCsimSpnDisplayCondition = false;
+    // MTK-END
     private String mMdn;
     @UnsupportedAppUsage
     private String mMin;
@@ -92,16 +94,19 @@ public class RuimRecords extends IccRecords {
     private static final int EVENT_GET_IMSI_DONE = 3;
     private static final int EVENT_GET_DEVICE_IDENTITY_DONE = 4;
     private static final int EVENT_GET_ICCID_DONE = 5;
-    private static final int EVENT_GET_CDMA_SUBSCRIPTION_DONE = 10;
+    protected static final int EVENT_GET_CDMA_SUBSCRIPTION_DONE = 10;
     private static final int EVENT_UPDATE_DONE = 14;
-    private static final int EVENT_GET_SST_DONE = 17;
+    // MTK-START
+    protected /*private*/ static final int EVENT_GET_SST_DONE = 17;
+    // MTK-END
     private static final int EVENT_GET_ALL_SMS_DONE = 18;
     private static final int EVENT_MARK_SMS_READ_DONE = 19;
 
     private static final int EVENT_SMS_ON_RUIM = 21;
     private static final int EVENT_GET_SMS_DONE = 22;
-
-    private static final int EVENT_APP_LOCKED = 32;
+    // MTK-START
+    protected /*private*/ static final int EVENT_APP_LOCKED = 32;
+    // MTK-END
     private static final int EVENT_APP_NETWORK_LOCKED = 33;
 
     public RuimRecords(UiccCardApplication app, Context c, CommandsInterface ci) {
@@ -660,7 +665,9 @@ public class RuimRecords extends IccRecords {
                     String operatorNumeric = getRUIMOperatorNumeric();
                     log("NO update mccmnc=" + operatorNumeric);
                 }
-
+                // MTK-START: add on
+                onGetImsiDone(mImsi);
+                // MTK-END
             break;
 
             case EVENT_GET_CDMA_SUBSCRIPTION_DONE:
@@ -837,7 +844,9 @@ public class RuimRecords extends IccRecords {
         mCi.getCDMASubscription(obtainMessage(EVENT_GET_CDMA_SUBSCRIPTION_DONE));
     }
 
-    private void onLocked(int msg) {
+    // MTK-START: add on
+    protected void onLocked(int msg) {
+    // MTK-END
         if (DBG) log("only fetch EF_ICCID in locked state");
         mLockedRecordsReqReason = msg == EVENT_APP_LOCKED ? LOCKED_RECORDS_REQ_REASON_LOCKED :
                 LOCKED_RECORDS_REQ_REASON_NETWORK_LOCKED;
@@ -846,8 +855,10 @@ public class RuimRecords extends IccRecords {
         mRecordsToLoad++;
     }
 
+    // MTK-START: add on
     @UnsupportedAppUsage
-    private void fetchRuimRecords() {
+    protected /*private*/ void fetchRuimRecords() {
+    // MTK-END
         mRecordsRequested = true;
 
         if (DBG) log("fetchRuimRecords " + mRecordsToLoad);
@@ -992,4 +1003,8 @@ public class RuimRecords extends IccRecords {
         pw.println(" mHomeNetworkId=" + mHomeNetworkId);
         pw.flush();
     }
+
+    // MTK-START: add on
+    protected void onGetImsiDone(String imsi) {}
+    // MTK-END
 }

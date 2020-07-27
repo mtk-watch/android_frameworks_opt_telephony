@@ -53,8 +53,8 @@ public abstract class BaseCommands implements CommandsInterface {
     @UnsupportedAppUsage
     protected RegistrantList mIccStatusChangedRegistrants = new RegistrantList();
     protected RegistrantList mIccSlotStatusChangedRegistrants = new RegistrantList();
-    protected RegistrantList mVoicePrivacyOnRegistrants = new RegistrantList();
-    protected RegistrantList mVoicePrivacyOffRegistrants = new RegistrantList();
+    public RegistrantList mVoicePrivacyOnRegistrants = new RegistrantList();
+    public RegistrantList mVoicePrivacyOffRegistrants = new RegistrantList();
     @UnsupportedAppUsage
     protected Registrant mUnsolOemHookRawRegistrant;
     @UnsupportedAppUsage
@@ -128,7 +128,7 @@ public abstract class BaseCommands implements CommandsInterface {
     @UnsupportedAppUsage
     protected Registrant mIccSmsFullRegistrant;
     @UnsupportedAppUsage
-    protected Registrant mEmergencyCallbackModeRegistrant;
+    public Registrant mEmergencyCallbackModeRegistrant;
     @UnsupportedAppUsage
     protected Registrant mRingRegistrant;
     @UnsupportedAppUsage
@@ -146,12 +146,21 @@ public abstract class BaseCommands implements CommandsInterface {
     @UnsupportedAppUsage
     protected int mPreferredNetworkType;
     // CDMA subscription received from PhoneFactory
-    protected int mCdmaSubscription;
+    public int mCdmaSubscription;
     // Type of Phone, GSM or CDMA. Set by GsmCdmaPhone.
     @UnsupportedAppUsage
     protected int mPhoneType;
     // RIL Version
     protected int mRilVersion = -1;
+
+    /** M:
+     * When URC(VOICE_RADIO_TECH_CHANGED) is sent to rilj,
+     * the listener has not register to listen the message(VOICE_RADIO_TECH_CHANGED).
+     *
+     * Using a variable to save the value of VOICE_RADIO_TECH_CHANGED.
+     * Then, notify listener when register to listen the message(VOICE_RADIO_TECH_CHANGED).
+     */
+    protected int mNewVoiceTech = -1;
 
     public BaseCommands(Context context) {
         mContext = context;  // May be null (if so we won't log statistics)
@@ -310,6 +319,12 @@ public abstract class BaseCommands implements CommandsInterface {
     public void registerForVoiceRadioTechChanged(Handler h, int what, Object obj) {
         Registrant r = new Registrant (h, what, obj);
         mVoiceRadioTechChangedRegistrants.add(r);
+        if (mNewVoiceTech != -1) {
+            int response[] = new int[1];
+            response[0] = mNewVoiceTech;
+            mVoiceRadioTechChangedRegistrants.notifyRegistrants(
+                    new AsyncResult(null, response, null));
+        }
     }
 
     @Override

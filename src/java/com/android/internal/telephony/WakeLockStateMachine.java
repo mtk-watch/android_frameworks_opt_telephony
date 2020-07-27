@@ -62,10 +62,13 @@ public abstract class WakeLockStateMachine extends StateMachine {
     /** Wakelock release delay when returning to idle state. */
     private static final int WAKE_LOCK_TIMEOUT = 3000;
 
-    private final DefaultState mDefaultState = new DefaultState();
+    // MTK-START
+    // Change the attribute and remove keyword final for sub class
+    protected DefaultState mDefaultState = new DefaultState();
     @UnsupportedAppUsage
-    private final IdleState mIdleState = new IdleState();
-    private final WaitingState mWaitingState = new WaitingState();
+    protected IdleState mIdleState = new IdleState();
+    protected WaitingState mWaitingState = new WaitingState();
+    // MTK-END
 
     protected WakeLockStateMachine(String debugTag, Context context, Phone phone) {
         super(debugTag);
@@ -82,6 +85,21 @@ public abstract class WakeLockStateMachine extends StateMachine {
         addState(mWaitingState, mDefaultState);
         setInitialState(mIdleState);
     }
+
+    // MTK-START
+    // Add dummy constructor for sub class
+    protected WakeLockStateMachine(String debugTag, Context context, Phone phone,
+            Object dummy) {
+        super(debugTag);
+
+        mContext = context;
+        mPhone = phone;
+
+        PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
+        mWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, debugTag);
+        mWakeLock.acquire();    // wake lock released after we enter idle state
+    }
+    // MTK-END
 
     /**
      * Tell the state machine to quit after processing all messages.
@@ -110,7 +128,10 @@ public abstract class WakeLockStateMachine extends StateMachine {
      * This parent state throws an exception (for debug builds) or prints an error for unhandled
      * message types.
      */
-    class DefaultState extends State {
+    // MTK-START
+    // Modification for sub class
+    public class DefaultState extends State {
+    // MTK-END
         @Override
         public boolean processMessage(Message msg) {
             switch (msg.what) {
@@ -132,7 +153,10 @@ public abstract class WakeLockStateMachine extends StateMachine {
      * Idle state delivers Cell Broadcasts to receivers. It acquires the wakelock, which is
      * released when the broadcast completes.
      */
-    class IdleState extends State {
+    // MTK-START
+    // Modification for sub class
+    public class IdleState extends State {
+    // MTK-END
         @Override
         public void enter() {
             sendMessageDelayed(EVENT_RELEASE_WAKE_LOCK, WAKE_LOCK_TIMEOUT);
@@ -176,7 +200,10 @@ public abstract class WakeLockStateMachine extends StateMachine {
      * Waiting state waits for the result receiver to be called for the current cell broadcast.
      * In this state, any new cell broadcasts are deferred until we return to Idle state.
      */
-    class WaitingState extends State {
+    // MTK-START
+    // Modification for sub class
+    public class WaitingState extends State {
+    // MTK-END
         @Override
         public boolean processMessage(Message msg) {
             switch (msg.what) {

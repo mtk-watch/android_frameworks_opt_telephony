@@ -37,12 +37,13 @@ public class NotificationInd extends GenericPdu {
         setMessageType(PduHeaders.MESSAGE_TYPE_NOTIFICATION_IND);
     }
 
+    /*MTK Change access type*/
     /**
      * Constructor with given headers.
      *
      * @param headers Headers for this PDU.
      */
-    NotificationInd(PduHeaders headers) {
+    public NotificationInd(PduHeaders headers) {
         super(headers);
     }
 

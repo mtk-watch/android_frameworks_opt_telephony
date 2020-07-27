@@ -55,8 +55,9 @@ public class Menu implements Parcelable {
         // set default style to be navigation menu.
         presentationType = PresentationType.NAVIGATION_OPTIONS;
     }
-
-    private Menu(Parcel in) {
+    // MTK-START
+    protected /*private*/ Menu(Parcel in) {
+    // MTK-END
         title = in.readString();
         titleIcon = in.readParcelable(null);
         // rebuild items list.

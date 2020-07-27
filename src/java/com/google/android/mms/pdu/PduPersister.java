@@ -68,7 +68,8 @@ import java.util.Set;
 public class PduPersister {
     private static final String TAG = "PduPersister";
     private static final boolean DEBUG = false;
-    private static final boolean LOCAL_LOGV = false;
+    /* MTK Change access type */
+    protected static final boolean LOCAL_LOGV = false;
 
     private static final long DUMMY_THREAD_ID = Long.MAX_VALUE;
 
@@ -90,10 +91,13 @@ public class PduPersister {
      */
     public static final int PROC_STATUS_COMPLETED           = 3;
 
-    private static PduPersister sPersister;
-    private static final PduCache PDU_CACHE_INSTANCE;
+    /* MTK Change access type */
+    protected static PduPersister sPersister;
+    /* MTK Change access type */
+    protected static final PduCache PDU_CACHE_INSTANCE;
 
-    private static final int[] ADDRESS_FIELDS = new int[] {
+    /* MTK Change access type */
+    protected static final int[] ADDRESS_FIELDS = new int[] {
             PduHeaders.BCC,
             PduHeaders.CC,
             PduHeaders.FROM,
@@ -130,35 +134,37 @@ public class PduPersister {
         Mms.RETRIEVE_TEXT_CHARSET,
     };
 
-    private static final int PDU_COLUMN_ID                    = 0;
-    private static final int PDU_COLUMN_MESSAGE_BOX           = 1;
-    private static final int PDU_COLUMN_THREAD_ID             = 2;
-    private static final int PDU_COLUMN_RETRIEVE_TEXT         = 3;
-    private static final int PDU_COLUMN_SUBJECT               = 4;
-    private static final int PDU_COLUMN_CONTENT_LOCATION      = 5;
-    private static final int PDU_COLUMN_CONTENT_TYPE          = 6;
-    private static final int PDU_COLUMN_MESSAGE_CLASS         = 7;
-    private static final int PDU_COLUMN_MESSAGE_ID            = 8;
-    private static final int PDU_COLUMN_RESPONSE_TEXT         = 9;
-    private static final int PDU_COLUMN_TRANSACTION_ID        = 10;
-    private static final int PDU_COLUMN_CONTENT_CLASS         = 11;
-    private static final int PDU_COLUMN_DELIVERY_REPORT       = 12;
-    private static final int PDU_COLUMN_MESSAGE_TYPE          = 13;
-    private static final int PDU_COLUMN_MMS_VERSION           = 14;
-    private static final int PDU_COLUMN_PRIORITY              = 15;
-    private static final int PDU_COLUMN_READ_REPORT           = 16;
-    private static final int PDU_COLUMN_READ_STATUS           = 17;
-    private static final int PDU_COLUMN_REPORT_ALLOWED        = 18;
-    private static final int PDU_COLUMN_RETRIEVE_STATUS       = 19;
-    private static final int PDU_COLUMN_STATUS                = 20;
-    private static final int PDU_COLUMN_DATE                  = 21;
-    private static final int PDU_COLUMN_DELIVERY_TIME         = 22;
-    private static final int PDU_COLUMN_EXPIRY                = 23;
-    private static final int PDU_COLUMN_MESSAGE_SIZE          = 24;
-    private static final int PDU_COLUMN_SUBJECT_CHARSET       = 25;
-    private static final int PDU_COLUMN_RETRIEVE_TEXT_CHARSET = 26;
+    /* MTK Change access type */
+    protected static final int PDU_COLUMN_ID                    = 0;
+    protected static final int PDU_COLUMN_MESSAGE_BOX           = 1;
+    protected static final int PDU_COLUMN_THREAD_ID             = 2;
+    protected static final int PDU_COLUMN_RETRIEVE_TEXT         = 3;
+    protected static final int PDU_COLUMN_SUBJECT               = 4;
+    protected static final int PDU_COLUMN_CONTENT_LOCATION      = 5;
+    protected static final int PDU_COLUMN_CONTENT_TYPE          = 6;
+    protected static final int PDU_COLUMN_MESSAGE_CLASS         = 7;
+    protected static final int PDU_COLUMN_MESSAGE_ID            = 8;
+    protected static final int PDU_COLUMN_RESPONSE_TEXT         = 9;
+    protected static final int PDU_COLUMN_TRANSACTION_ID        = 10;
+    protected static final int PDU_COLUMN_CONTENT_CLASS         = 11;
+    protected static final int PDU_COLUMN_DELIVERY_REPORT       = 12;
+    protected static final int PDU_COLUMN_MESSAGE_TYPE          = 13;
+    protected static final int PDU_COLUMN_MMS_VERSION           = 14;
+    protected static final int PDU_COLUMN_PRIORITY              = 15;
+    protected static final int PDU_COLUMN_READ_REPORT           = 16;
+    protected static final int PDU_COLUMN_READ_STATUS           = 17;
+    protected static final int PDU_COLUMN_REPORT_ALLOWED        = 18;
+    protected static final int PDU_COLUMN_RETRIEVE_STATUS       = 19;
+    protected static final int PDU_COLUMN_STATUS                = 20;
+    protected static final int PDU_COLUMN_DATE                  = 21;
+    protected static final int PDU_COLUMN_DELIVERY_TIME         = 22;
+    protected static final int PDU_COLUMN_EXPIRY                = 23;
+    protected static final int PDU_COLUMN_MESSAGE_SIZE          = 24;
+    protected static final int PDU_COLUMN_SUBJECT_CHARSET       = 25;
+    protected static final int PDU_COLUMN_RETRIEVE_TEXT_CHARSET = 26;
 
-    private static final String[] PART_PROJECTION = new String[] {
+    /* MTK Change access type */
+    protected static final String[] PART_PROJECTION = new String[] {
         Part._ID,
         Part.CHARSET,
         Part.CONTENT_DISPOSITION,
@@ -170,28 +176,39 @@ public class PduPersister {
         Part.TEXT
     };
 
-    private static final int PART_COLUMN_ID                  = 0;
-    private static final int PART_COLUMN_CHARSET             = 1;
-    private static final int PART_COLUMN_CONTENT_DISPOSITION = 2;
-    private static final int PART_COLUMN_CONTENT_ID          = 3;
-    private static final int PART_COLUMN_CONTENT_LOCATION    = 4;
-    private static final int PART_COLUMN_CONTENT_TYPE        = 5;
-    private static final int PART_COLUMN_FILENAME            = 6;
-    private static final int PART_COLUMN_NAME                = 7;
-    private static final int PART_COLUMN_TEXT                = 8;
+    /* MTK Change access type */
+    protected static final int PART_COLUMN_ID                  = 0;
+    /* MTK Change access type */
+    protected static final int PART_COLUMN_CHARSET             = 1;
+    /* MTK Change access type */
+    protected static final int PART_COLUMN_CONTENT_DISPOSITION = 2;
+    /* MTK Change access type */
+    protected static final int PART_COLUMN_CONTENT_ID          = 3;
+    /* MTK Change access type */
+    protected static final int PART_COLUMN_CONTENT_LOCATION    = 4;
+    /* MTK Change access type */
+    protected static final int PART_COLUMN_CONTENT_TYPE        = 5;
+    /* MTK Change access type */
+    protected static final int PART_COLUMN_FILENAME            = 6;
+    /* MTK Change access type */
+    protected static final int PART_COLUMN_NAME                = 7;
+    /* MTK Change access type */
+    protected static final int PART_COLUMN_TEXT                = 8;
 
-    private static final HashMap<Uri, Integer> MESSAGE_BOX_MAP;
+    /* MTK Change access type */
+    protected static final HashMap<Uri, Integer> MESSAGE_BOX_MAP;
     // These map are used for convenience in persist() and load().
-    private static final HashMap<Integer, Integer> CHARSET_COLUMN_INDEX_MAP;
-    private static final HashMap<Integer, Integer> ENCODED_STRING_COLUMN_INDEX_MAP;
-    private static final HashMap<Integer, Integer> TEXT_STRING_COLUMN_INDEX_MAP;
-    private static final HashMap<Integer, Integer> OCTET_COLUMN_INDEX_MAP;
-    private static final HashMap<Integer, Integer> LONG_COLUMN_INDEX_MAP;
-    private static final HashMap<Integer, String> CHARSET_COLUMN_NAME_MAP;
-    private static final HashMap<Integer, String> ENCODED_STRING_COLUMN_NAME_MAP;
-    private static final HashMap<Integer, String> TEXT_STRING_COLUMN_NAME_MAP;
-    private static final HashMap<Integer, String> OCTET_COLUMN_NAME_MAP;
-    private static final HashMap<Integer, String> LONG_COLUMN_NAME_MAP;
+    protected static final HashMap<Integer, Integer> CHARSET_COLUMN_INDEX_MAP;
+    protected static final HashMap<Integer, Integer> ENCODED_STRING_COLUMN_INDEX_MAP;
+    protected static final HashMap<Integer, Integer> TEXT_STRING_COLUMN_INDEX_MAP;
+    protected static final HashMap<Integer, Integer> OCTET_COLUMN_INDEX_MAP;
+    protected static final HashMap<Integer, Integer> LONG_COLUMN_INDEX_MAP;
+    protected static final HashMap<Integer, String> CHARSET_COLUMN_NAME_MAP;
+    protected static final HashMap<Integer, String> ENCODED_STRING_COLUMN_NAME_MAP;
+    protected static final HashMap<Integer, String> TEXT_STRING_COLUMN_NAME_MAP;
+    protected static final HashMap<Integer, String> OCTET_COLUMN_NAME_MAP;
+    protected static final HashMap<Integer, String> LONG_COLUMN_NAME_MAP;
+    /* MTK Change access type end */
 
     static {
         MESSAGE_BOX_MAP = new HashMap<Uri, Integer>();
@@ -275,12 +292,16 @@ public class PduPersister {
         PDU_CACHE_INSTANCE = PduCache.getInstance();
      }
 
-    private final Context mContext;
-    private final ContentResolver mContentResolver;
+    /* MTK Change access type */
+    public final Context mContext;
+    /* MTK Change access type */
+    protected final ContentResolver mContentResolver;
     private final DrmManagerClient mDrmManagerClient;
-    private final TelephonyManager mTelephonyManager;
+    /* MTK Change access type */
+    protected final TelephonyManager mTelephonyManager;
 
-    private PduPersister(Context context) {
+    /* MTK Change access type */
+    protected PduPersister(Context context) {
         mContext = context;
         mContentResolver = context.getContentResolver();
         mDrmManagerClient = new DrmManagerClient(context);
@@ -300,7 +321,8 @@ public class PduPersister {
         return sPersister;
     }
 
-    private void setEncodedStringValueToHeaders(
+    /* MTK Change access type */
+    protected void setEncodedStringValueToHeaders(
             Cursor c, int columnIndex,
             PduHeaders headers, int mapColumn) {
         String s = c.getString(columnIndex);
@@ -312,8 +334,8 @@ public class PduPersister {
             headers.setEncodedStringValue(value, mapColumn);
         }
     }
-
-    private void setTextStringToHeaders(
+    /* MTK Change access type */
+    protected void setTextStringToHeaders(
             Cursor c, int columnIndex,
             PduHeaders headers, int mapColumn) {
         String s = c.getString(columnIndex);
@@ -321,8 +343,8 @@ public class PduPersister {
             headers.setTextString(getBytes(s), mapColumn);
         }
     }
-
-    private void setOctetToHeaders(
+    /* MTK Change access type */
+    protected void setOctetToHeaders(
             Cursor c, int columnIndex,
             PduHeaders headers, int mapColumn) throws InvalidHeaderValueException {
         if (!c.isNull(columnIndex)) {
@@ -330,8 +352,8 @@ public class PduPersister {
             headers.setOctet(b, mapColumn);
         }
     }
-
-    private void setLongToHeaders(
+    /* MTK Change access type */
+    protected void setLongToHeaders(
             Cursor c, int columnIndex,
             PduHeaders headers, int mapColumn) {
         if (!c.isNull(columnIndex)) {
@@ -340,21 +362,24 @@ public class PduPersister {
         }
     }
 
-    private Integer getIntegerFromPartColumn(Cursor c, int columnIndex) {
+    /* MTK Change access type */
+    protected Integer getIntegerFromPartColumn(Cursor c, int columnIndex) {
         if (!c.isNull(columnIndex)) {
             return c.getInt(columnIndex);
         }
         return null;
     }
 
-    private byte[] getByteArrayFromPartColumn(Cursor c, int columnIndex) {
+    /* MTK Change access type */
+    protected byte[] getByteArrayFromPartColumn(Cursor c, int columnIndex) {
         if (!c.isNull(columnIndex)) {
             return getBytes(c.getString(columnIndex));
         }
         return null;
     }
 
-    private PduPart[] loadParts(long msgId) throws MmsException {
+    /* MTK Change access type */
+    protected PduPart[] loadParts(long msgId) throws MmsException {
         Cursor c = SqliteWrapper.query(mContext, mContentResolver,
                 Uri.parse("content://mms/" + msgId + "/part"),
                 PART_PROJECTION, null, null, null);
@@ -479,7 +504,8 @@ public class PduPersister {
         return parts;
     }
 
-    private void loadAddress(long msgId, PduHeaders headers) {
+    /* MTK Change access type */
+    protected void loadAddress(long msgId, PduHeaders headers) {
         Cursor c = SqliteWrapper.query(mContext, mContentResolver,
                 Uri.parse("content://mms/" + msgId + "/addr"),
                 new String[] { Addr.ADDRESS, Addr.CHARSET, Addr.TYPE },
@@ -679,7 +705,8 @@ public class PduPersister {
         return pdu;
     }
 
-    private void persistAddress(
+    /* MTK Change access type */
+    protected void persistAddress(
             long msgId, int type, EncodedStringValue[] array) {
         ContentValues values = new ContentValues(3);
 
@@ -694,7 +721,8 @@ public class PduPersister {
         }
     }
 
-    private static String getPartContentType(PduPart part) {
+    /* MTK Change access type */
+    protected static String getPartContentType(PduPart part) {
         return part.getContentType() == null ? null : toIsoString(part.getContentType());
     }
 
@@ -764,6 +792,7 @@ public class PduPersister {
         return res;
     }
 
+    /* MTK Change access type */
     /**
      * Save data of the part into storage. The source data may be given
      * by a byte[] or a Uri. If it's a byte[], directly save it
@@ -778,7 +807,7 @@ public class PduPersister {
      * @throws MmsException Cannot find source data or error occurred
      *         while saving the data.
      */
-    private void persistData(PduPart part, Uri uri,
+    protected void persistData(PduPart part, Uri uri,
             String contentType, HashMap<Uri, InputStream> preOpenedFiles)
             throws MmsException {
         OutputStream os = null;
@@ -1031,7 +1060,8 @@ public class PduPersister {
         SqliteWrapper.update(mContext, mContentResolver, uri, values, null, null);
     }
 
-    private void updatePart(Uri uri, PduPart part, HashMap<Uri, InputStream> preOpenedFiles)
+    /* MTK Change access type */
+    protected void updatePart(Uri uri, PduPart part, HashMap<Uri, InputStream> preOpenedFiles)
             throws MmsException {
         ContentValues values = new ContentValues(7);
 
@@ -1403,6 +1433,7 @@ public class PduPersister {
         return res;
     }
 
+    /* MTK Change access type */
     /**
      * For a given address type, extract the recipients from the headers.
      *
@@ -1411,7 +1442,7 @@ public class PduPersister {
      * @param addressMap a HashMap of the addresses from the ADDRESS_FIELDS header
      * @param excludeMyNumber if true, the number of this phone will be excluded from recipients
      */
-    private void loadRecipients(int addressType, HashSet<String> recipients,
+    protected void loadRecipients(int addressType, HashSet<String> recipients,
             HashMap<Integer, EncodedStringValue[]> addressMap, boolean excludeMyNumber) {
         EncodedStringValue[] array = addressMap.get(addressType);
         if (array == null) {
@@ -1519,6 +1550,8 @@ public class PduPersister {
     public void release() {
         Uri uri = Uri.parse(TEMPORARY_DRM_OBJECT_URI);
         SqliteWrapper.delete(mContext, mContentResolver, uri, null, null);
+        // MTK Change: call release to avoid resource leaks
+        mDrmManagerClient.release();
     }
 
     /**

@@ -36,6 +36,7 @@ import android.telephony.data.DataCallResponse;
 
 import com.android.internal.telephony.DctConstants;
 import com.android.internal.telephony.Phone;
+import com.android.internal.telephony.TelephonyComponentFactory;
 import com.android.internal.telephony.dataconnection.DataConnection.UpdateLinkPropertyResult;
 import com.android.internal.util.State;
 import com.android.internal.util.StateMachine;
@@ -52,26 +53,26 @@ import java.util.List;
  * and then demultiplexing them to the appropriate DC.
  */
 public class DcController extends StateMachine {
-    private static final boolean DBG = true;
-    private static final boolean VDBG = false;
+    protected static final boolean DBG = true;
+    protected static final boolean VDBG = false;
 
-    private final Phone mPhone;
-    private final DcTracker mDct;
-    private final DataServiceManager mDataServiceManager;
+    protected final Phone mPhone;
+    protected final DcTracker mDct;
+    protected final DataServiceManager mDataServiceManager;
     private final DcTesterDeactivateAll mDcTesterDeactivateAll;
 
     // package as its used by Testing code
     // @GuardedBy("mDcListAll")
-    final ArrayList<DataConnection> mDcListAll = new ArrayList<>();
+    protected final ArrayList<DataConnection> mDcListAll = new ArrayList<>();
     // @GuardedBy("mDcListAll")
-    private final HashMap<Integer, DataConnection> mDcListActiveByCid = new HashMap<>();
+    protected final HashMap<Integer, DataConnection> mDcListActiveByCid = new HashMap<>();
 
-    private DccDefaultState mDccDefaultState = new DccDefaultState();
+    protected DccDefaultState mDccDefaultState = new DccDefaultState();
 
-    final TelephonyManager mTelephonyManager;
+    protected final TelephonyManager mTelephonyManager;
     final NetworkPolicyManager mNetworkPolicyManager;
 
-    private PhoneStateListener mPhoneStateListener;
+    protected PhoneStateListener mPhoneStateListener;
 
     //mExecutingCarrierChange tracks whether the phone is currently executing
     //carrier network change
@@ -86,7 +87,7 @@ public class DcController extends StateMachine {
      * @param dataServiceManager the data service manager that manages data services
      * @param handler defines the thread/looper to be used with Dcc
      */
-    private DcController(String name, Phone phone, DcTracker dct,
+    public DcController(String name, Phone phone, DcTracker dct,
                          DataServiceManager dataServiceManager, Handler handler) {
         super(name, handler);
         setLogRecSize(300);
@@ -94,6 +95,9 @@ public class DcController extends StateMachine {
         mPhone = phone;
         mDct = dct;
         mDataServiceManager = dataServiceManager;
+        /// M: for telephony add-on @{
+        mtkReplaceStates();
+        /// @}
         addState(mDccDefaultState);
         setInitialState(mDccDefaultState);
         log("X ctor");
@@ -123,7 +127,12 @@ public class DcController extends StateMachine {
     public static DcController makeDcc(Phone phone, DcTracker dct,
                                        DataServiceManager dataServiceManager, Handler handler,
                                        String tagSuffix) {
-        return new DcController("Dcc" + tagSuffix, phone, dct, dataServiceManager, handler);
+        /// M: for telephony add-on @{
+        DcController dcc = TelephonyComponentFactory.getInstance().inject(
+                TelephonyComponentFactory.class.getName()).makeDcController("Dcc" + tagSuffix,
+                phone, dct, dataServiceManager, handler);
+        /// @}
+        return dcc;
     }
 
     void dispose() {
@@ -132,13 +141,13 @@ public class DcController extends StateMachine {
         quitNow();
     }
 
-    void addDc(DataConnection dc) {
+    public void addDc(DataConnection dc) {
         synchronized (mDcListAll) {
             mDcListAll.add(dc);
         }
     }
 
-    void removeDc(DataConnection dc) {
+    public void removeDc(DataConnection dc) {
         synchronized (mDcListAll) {
             mDcListActiveByCid.remove(dc.mCid);
             mDcListAll.remove(dc);
@@ -160,7 +169,7 @@ public class DcController extends StateMachine {
         }
     }
 
-    void removeActiveDcByCid(DataConnection dc) {
+    protected void removeActiveDcByCid(DataConnection dc) {
         synchronized (mDcListAll) {
             DataConnection removedDc = mDcListActiveByCid.remove(dc.mCid);
             if (DBG && removedDc == null) {
@@ -188,7 +197,7 @@ public class DcController extends StateMachine {
         }
     };
 
-    private class DccDefaultState extends State {
+    protected class DccDefaultState extends State {
         @Override
         public void enter() {
             if (mPhone != null && mDataServiceManager.getTransportType()
@@ -255,7 +264,7 @@ public class DcController extends StateMachine {
          * Process the new list of "known" Data Calls
          * @param dcsList as sent by RIL_UNSOL_DATA_CALL_LIST_CHANGED
          */
-        private void onDataStateChanged(ArrayList<DataCallResponse> dcsList) {
+        protected void onDataStateChanged(ArrayList<DataCallResponse> dcsList) {
             final ArrayList<DataConnection> dcListAll;
             final HashMap<Integer, DataConnection> dcListActiveByCid;
             synchronized (mDcListAll) {
@@ -456,7 +465,7 @@ public class DcController extends StateMachine {
      * lr is short name for logAndAddLogRec
      * @param s
      */
-    private void lr(String s) {
+    protected void lr(String s) {
         logAndAddLogRec(s);
     }
 
@@ -495,5 +504,11 @@ public class DcController extends StateMachine {
             pw.println(" mDcListAll=" + mDcListAll);
             pw.println(" mDcListActiveByCid=" + mDcListActiveByCid);
         }
+    }
+
+    /**
+     * Anchor method to replace states implementation in the state machine initialization procedure.
+     */
+    protected void mtkReplaceStates() {
     }
 }

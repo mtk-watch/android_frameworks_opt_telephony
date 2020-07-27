@@ -53,9 +53,9 @@ public class TelephonyNetworkFactory extends NetworkFactory {
 
     private static final int REQUEST_LOG_SIZE = 40;
 
-    private static final int ACTION_NO_OP   = 0;
-    private static final int ACTION_REQUEST = 1;
-    private static final int ACTION_RELEASE = 2;
+    protected static final int ACTION_NO_OP   = 0;
+    protected static final int ACTION_REQUEST = 1;
+    protected static final int ACTION_RELEASE = 2;
 
     private static final int TELEPHONY_NETWORK_SCORE = 50;
 
@@ -121,7 +121,7 @@ public class TelephonyNetworkFactory extends NetworkFactory {
         return makeNetworkFilter(subscriptionId);
     }
 
-    private NetworkCapabilities makeNetworkFilter(int subscriptionId) {
+    protected NetworkCapabilities makeNetworkFilter(int subscriptionId) {
         NetworkCapabilities nc = new NetworkCapabilities();
         nc.addTransportType(NetworkCapabilities.TRANSPORT_CELLULAR);
         nc.addCapability(NetworkCapabilities.NET_CAPABILITY_MMS);
@@ -238,6 +238,13 @@ public class TelephonyNetworkFactory extends NetworkFactory {
             int action = getAction(applied, shouldApply);
             if (action == ACTION_NO_OP) continue;
 
+            /// M: Decide if ignore capability check @{
+            if (mtkIgnoreCapabilityCheck(networkRequest.networkCapabilities,
+                    getAction(applied, shouldApply))) {
+                continue;
+            }
+            /// @}
+
             logl("onActivePhoneSwitch: " + ((action == ACTION_REQUEST)
                     ? "Requesting" : "Releasing") + " network request " + networkRequest);
             int transportType = getTransportTypeFromNetworkRequest(networkRequest);
@@ -273,7 +280,7 @@ public class TelephonyNetworkFactory extends NetworkFactory {
         msg.sendToTarget();
     }
 
-    private void onNeedNetworkFor(Message msg) {
+    protected void onNeedNetworkFor(Message msg) {
         NetworkRequest networkRequest = (NetworkRequest) msg.obj;
         boolean shouldApply = mPhoneSwitcher.shouldApplyNetworkRequest(
                 networkRequest, mPhone.getPhoneId());
@@ -284,7 +291,10 @@ public class TelephonyNetworkFactory extends NetworkFactory {
 
         logl("onNeedNetworkFor " + networkRequest + " shouldApply " + shouldApply);
 
-        if (shouldApply) {
+        if (shouldApply
+            /// M: Decide if ignore capability check @{
+                || mtkIgnoreCapabilityCheck(networkRequest.networkCapabilities, ACTION_REQUEST)) {
+            /// @}
             requestNetworkInternal(networkRequest, DcTracker.REQUEST_TYPE_NORMAL,
                     getTransportTypeFromNetworkRequest(networkRequest), null);
         }
@@ -297,7 +307,7 @@ public class TelephonyNetworkFactory extends NetworkFactory {
         msg.sendToTarget();
     }
 
-    private void onReleaseNetworkFor(Message msg) {
+    protected void onReleaseNetworkFor(Message msg) {
         NetworkRequest networkRequest = (NetworkRequest) msg.obj;
         boolean applied = mNetworkRequests.get(networkRequest)
                 != AccessNetworkConstants.TRANSPORT_TYPE_INVALID;
@@ -306,7 +316,10 @@ public class TelephonyNetworkFactory extends NetworkFactory {
 
         logl("onReleaseNetworkFor " + networkRequest + " applied " + applied);
 
-        if (applied) {
+        if (applied
+            /// M: Decide if ignore capability check @{
+                || mtkIgnoreCapabilityCheck(networkRequest.networkCapabilities, ACTION_RELEASE)) {
+            /// @}
             int transport = getTransportTypeFromNetworkRequest(networkRequest);
             releaseNetworkInternal(networkRequest, DcTracker.RELEASE_TYPE_NORMAL, transport);
         }
@@ -419,5 +432,15 @@ public class TelephonyNetworkFactory extends NetworkFactory {
         }
         mLocalLog.dump(fd, pw, args);
         pw.decreaseIndent();
+    }
+
+    /**
+     * Anchor method  to execute the special request even if the TNF not active phone.
+     * @param capabilities used to check the network should be controlled by mIsActive or not.
+     * @param action used the action of the request.
+     * @return true if the network doesn't need to be controlled by mIsActive.
+     */
+    protected boolean mtkIgnoreCapabilityCheck(NetworkCapabilities capabilities, int action) {
+        return false;
     }
 }

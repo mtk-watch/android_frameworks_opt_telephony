@@ -73,21 +73,27 @@ import java.util.List;
  */
 public class SubscriptionInfoUpdater extends Handler {
     private static final String LOG_TAG = "SubscriptionInfoUpdater";
+    // MTK-START: add on
     @UnsupportedAppUsage
-    private static final int PROJECT_SIM_NUM = TelephonyManager.getDefault().getPhoneCount();
-
+    protected /*private*/ static final int PROJECT_SIM_NUM
+            = TelephonyManager.getDefault().getPhoneCount();
+    // MTK-END
     private static final boolean DBG = true;
 
     private static final int EVENT_INVALID = -1;
-    private static final int EVENT_GET_NETWORK_SELECTION_MODE_DONE = 2;
-    private static final int EVENT_SIM_LOADED = 3;
+    // MTK-START: add on
+    protected /*private*/ static final int EVENT_GET_NETWORK_SELECTION_MODE_DONE = 2;
+    protected /*private*/ static final int EVENT_SIM_LOADED = 3;
+    // MTK-END
     private static final int EVENT_SIM_ABSENT = 4;
     private static final int EVENT_SIM_LOCKED = 5;
     private static final int EVENT_SIM_IO_ERROR = 6;
     private static final int EVENT_SIM_UNKNOWN = 7;
     private static final int EVENT_SIM_RESTRICTED = 8;
-    private static final int EVENT_SIM_NOT_READY = 9;
-    private static final int EVENT_SIM_READY = 10;
+    // MTK-START: add on
+    protected /*private*/ static final int EVENT_SIM_NOT_READY = 9;
+    protected /*private*/ static final int EVENT_SIM_READY = 10;
+    // MTK-END
     private static final int EVENT_SIM_IMSI = 11;
     private static final int EVENT_REFRESH_EMBEDDED_SUBSCRIPTIONS = 12;
 
@@ -99,31 +105,42 @@ public class SubscriptionInfoUpdater extends Handler {
     // Key used to read/write the current IMSI. Updated on SIM_STATE_CHANGED - LOADED.
     public static final String CURR_SUBID = "curr_subid";
 
+    // MTK-START: add on
     @UnsupportedAppUsage
-    private static Phone[] mPhone;
+    protected /*private*/ static Phone[] mPhone;
     @UnsupportedAppUsage
-    private static Context mContext = null;
+    protected /*private*/ static Context mContext = null;
     @UnsupportedAppUsage
-    private static String mIccId[] = new String[PROJECT_SIM_NUM];
+    protected /*private*/ static String mIccId[] = new String[PROJECT_SIM_NUM];
+    // MTK-END
     private static int[] sSimCardState = new int[PROJECT_SIM_NUM];
     private static int[] sSimApplicationState = new int[PROJECT_SIM_NUM];
-    private static boolean sIsSubInfoInitialized = false;
-    private SubscriptionManager mSubscriptionManager = null;
+
+    // MTK-START: add on
+    protected /*private*/ static boolean sIsSubInfoInitialized = false;
+    protected /*private*/ SubscriptionManager mSubscriptionManager = null;
+    // MTK-END
     private EuiccManager mEuiccManager;
+    // MTK-START: add on
     @UnsupportedAppUsage
-    private IPackageManager mPackageManager;
+    protected /*private*/ IPackageManager mPackageManager;
+    // MTK-END
     private Handler mBackgroundHandler;
 
     // The current foreground user ID.
+    // MTK-START: add on
     @UnsupportedAppUsage
-    private int mCurrentlyActiveUserId;
+    protected /*private*/ int mCurrentlyActiveUserId;
+    // MTK-END
     private CarrierServiceBindHelper mCarrierServiceBindHelper;
 
     /**
      * Runnable with a boolean parameter. This is used in
      * updateEmbeddedSubscriptions(List<Integer> cardIds, @Nullable UpdateEmbeddedSubsCallback).
      */
-    private interface UpdateEmbeddedSubsCallback {
+    // MTK-START: add on
+    protected /*private*/ interface UpdateEmbeddedSubsCallback {
+    // MTK-END
         /**
          * Callback of the Runnable.
          * @param hasChanges Whether there is any subscription info change. If yes, we need to
@@ -219,8 +236,10 @@ public class SubscriptionInfoUpdater extends Handler {
         }
     }
 
+    // MTK-START: add on
     @UnsupportedAppUsage
-    private boolean isAllIccIdQueryDone() {
+    protected /*private*/ boolean isAllIccIdQueryDone() {
+    // MTK-END
         for (int i = 0; i < PROJECT_SIM_NUM; i++) {
             UiccSlot slot = UiccController.getInstance().getUiccSlotForPhone(i);
             int slotId = UiccController.getInstance().getSlotIdFromPhoneId(i);
@@ -352,7 +371,9 @@ public class SubscriptionInfoUpdater extends Handler {
                 EVENT_REFRESH_EMBEDDED_SUBSCRIPTIONS, cardId, 0 /* arg2 */, callback));
     }
 
-    private void handleSimLocked(int slotId, String reason) {
+    // MTK-START: add on
+    protected /*private*/ void handleSimLocked(int slotId, String reason) {
+    // MTK-END
         if (mIccId[slotId] != null && mIccId[slotId].equals(ICCID_STRING_FOR_NO_SIM)) {
             logd("SIM" + (slotId + 1) + " hot plug in");
             mIccId[slotId] = null;
@@ -388,7 +409,9 @@ public class SubscriptionInfoUpdater extends Handler {
         updateCarrierServices(slotId, IccCardConstants.INTENT_VALUE_ICC_LOCKED);
     }
 
-    private static int getSimStateFromLockedReason(String lockedReason) {
+    // MTK-START: add on
+    protected /*private*/ static int getSimStateFromLockedReason(String lockedReason) {
+    // MTK-END
         switch (lockedReason) {
             case IccCardConstants.INTENT_VALUE_LOCKED_ON_PIN:
                 return TelephonyManager.SIM_STATE_PIN_REQUIRED;
@@ -404,7 +427,9 @@ public class SubscriptionInfoUpdater extends Handler {
         }
     }
 
-    private void handleSimNotReady(int slotId) {
+    // MTK-START: add on
+    protected /*private*/ void handleSimNotReady(int slotId) {
+    // MTK-END
         logd("handleSimNotReady: slotId: " + slotId);
 
         IccCard iccCard = mPhone[slotId].getIccCard();
@@ -422,7 +447,9 @@ public class SubscriptionInfoUpdater extends Handler {
         broadcastSimApplicationStateChanged(slotId, TelephonyManager.SIM_STATE_NOT_READY);
     }
 
-    private void handleSimLoaded(int slotId) {
+    // MTK-START: add on
+    protected /*private*/ void handleSimLoaded(int slotId) {
+    // MTK-END
         logd("handleSimLoaded: slotId: " + slotId);
 
         // The SIM should be loaded at this state, but it is possible in cases such as SIM being
@@ -439,11 +466,11 @@ public class SubscriptionInfoUpdater extends Handler {
             logd("handleSimLoaded: IccRecords null");
             return;
         }
-        if (IccUtils.stripTrailingFs(records.getFullIccId()) == null) {
+        if (records.getFullIccId() == null) {
             logd("handleSimLoaded: IccID null");
             return;
         }
-        mIccId[slotId] = IccUtils.stripTrailingFs(records.getFullIccId());
+        mIccId[slotId] = records.getFullIccId();
 
         updateSubscriptionInfoByIccId(slotId, true /* updateEmbeddedSubs */);
         List<SubscriptionInfo> subscriptionInfos = SubscriptionController.getInstance()
@@ -555,20 +582,26 @@ public class SubscriptionInfoUpdater extends Handler {
         updateCarrierServices(loadedSlotId, IccCardConstants.INTENT_VALUE_ICC_LOADED);
     }
 
-    private void updateCarrierServices(int slotId, String simState) {
+    // MTK-START: add on
+    protected /*private*/ void updateCarrierServices(int slotId, String simState) {
+    // MTK-END
         CarrierConfigManager configManager =
                 (CarrierConfigManager) mContext.getSystemService(Context.CARRIER_CONFIG_SERVICE);
         configManager.updateConfigForPhoneId(slotId, simState);
         mCarrierServiceBindHelper.updateForPhoneId(slotId, simState);
     }
 
-    private void updateSubscriptionCarrierId(int slotId, String simState) {
+    // MTK-START: add on
+    protected /*private*/ void updateSubscriptionCarrierId(int slotId, String simState) {
+    // MTK-END
         if (mPhone != null && mPhone[slotId] != null) {
             mPhone[slotId].resolveSubscriptionCarrierId(simState);
         }
     }
 
-    private void handleSimAbsent(int slotId, int absentAndInactive) {
+    // MTK-START: add on
+    protected /*private*/ void handleSimAbsent(int slotId, int absentAndInactive) {
+    // MTK-END
         if (mIccId[slotId] != null && !mIccId[slotId].equals(ICCID_STRING_FOR_NO_SIM)) {
             logd("SIM" + (slotId + 1) + " hot plug out, absentAndInactive=" + absentAndInactive);
         }
@@ -585,7 +618,9 @@ public class SubscriptionInfoUpdater extends Handler {
         }
     }
 
-    private void handleSimError(int slotId) {
+    // MTK-START: add on
+    protected /*private*/ void handleSimError(int slotId) {
+    // MTK-END
         if (mIccId[slotId] != null && !mIccId[slotId].equals(ICCID_STRING_FOR_NO_SIM)) {
             logd("SIM" + (slotId + 1) + " Error ");
         }
@@ -599,8 +634,10 @@ public class SubscriptionInfoUpdater extends Handler {
         updateCarrierServices(slotId, IccCardConstants.INTENT_VALUE_ICC_CARD_IO_ERROR);
     }
 
-    private synchronized void updateSubscriptionInfoByIccId(int slotIndex,
+    // MTK-START: add on
+    protected /*private*/ synchronized void updateSubscriptionInfoByIccId(int slotIndex,
             boolean updateEmbeddedSubs) {
+    // MTK-END
         logd("updateSubscriptionInfoByIccId:+ Start");
         if (!SubscriptionManager.isValidSlotIndex(slotIndex)) {
             loge("[updateSubscriptionInfoByIccId]- invalid slotIndex=" + slotIndex);
@@ -680,7 +717,9 @@ public class SubscriptionInfoUpdater extends Handler {
         if (DBG) logd("updateSubscriptionInfoByIccId: SubscriptionInfo update complete");
     }
 
-    private static void setSubInfoInitialized() {
+    // MTK-START: add on
+    protected /*private*/ static void setSubInfoInitialized() {
+    // MTK-END
         // Should only be triggered once.
         if (!sIsSubInfoInitialized) {
             if (DBG) logd("SubInfo Initialized");
@@ -1008,7 +1047,9 @@ public class SubscriptionInfoUpdater extends Handler {
         return -1;
     }
 
-    private boolean isNewSim(String iccId, String decIccId, String[] oldIccId) {
+    // MTK-START: add on
+    protected /*private*/ boolean isNewSim(String iccId, String decIccId, String[] oldIccId) {
+    // MTK-END
         boolean newSim = true;
         for(int i = 0; i < PROJECT_SIM_NUM; i++) {
             if(iccId.equals(oldIccId[i])) {
@@ -1024,8 +1065,10 @@ public class SubscriptionInfoUpdater extends Handler {
         return newSim;
     }
 
+    // MTK-START: add on
     @UnsupportedAppUsage
-    private void broadcastSimStateChanged(int slotId, String state, String reason) {
+    protected /*private*/ void broadcastSimStateChanged(int slotId, String state, String reason) {
+    // MTK-END
         Intent i = new Intent(TelephonyIntents.ACTION_SIM_STATE_CHANGED);
         // TODO - we'd like this intent to have a single snapshot of all sim state,
         // but until then this should not use REPLACE_PENDING or we may lose
@@ -1042,7 +1085,9 @@ public class SubscriptionInfoUpdater extends Handler {
         IntentBroadcaster.getInstance().broadcastStickyIntent(i, slotId);
     }
 
-    private void broadcastSimCardStateChanged(int phoneId, int state) {
+    // MTK-START: add on
+    protected /*private*/ void broadcastSimCardStateChanged(int phoneId, int state) {
+    // MTK-END
         if (state != sSimCardState[phoneId]) {
             sSimCardState[phoneId] = state;
             Intent i = new Intent(TelephonyManager.ACTION_SIM_CARD_STATE_CHANGED);
@@ -1061,7 +1106,9 @@ public class SubscriptionInfoUpdater extends Handler {
         }
     }
 
-    private void broadcastSimApplicationStateChanged(int phoneId, int state) {
+    // MTK-START: add on
+    protected /*private*/ void broadcastSimApplicationStateChanged(int phoneId, int state) {
+    // MTK-END
         // Broadcast if the state has changed, except if old state was UNKNOWN and new is NOT_READY,
         // because that's the initial state and a broadcast should be sent only on a transition
         // after SIM is PRESENT

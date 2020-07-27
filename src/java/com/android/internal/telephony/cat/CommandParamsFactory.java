@@ -23,6 +23,9 @@ import android.os.Message;
 import android.text.TextUtils;
 
 import com.android.internal.telephony.GsmAlphabet;
+//MTK-START
+import com.android.internal.telephony.TelephonyComponentFactory;
+//MTK-END
 import com.android.internal.telephony.uicc.IccFileHandler;
 
 import java.util.Iterator;
@@ -44,28 +47,28 @@ import static com.android.internal.telephony.cat.CatCmdMessage
  * into a CommandParams object.
  *
  */
-class CommandParamsFactory extends Handler {
-    private static CommandParamsFactory sInstance = null;
+// MTK-START
+public class CommandParamsFactory extends Handler {
+    protected /*private*/ static CommandParamsFactory sInstance = null;
     @UnsupportedAppUsage
-    private IconLoader mIconLoader;
-    private CommandParams mCmdParams = null;
-    private int mIconLoadState = LOAD_NO_ICON;
-    private RilMessageDecoder mCaller = null;
-    private boolean mloadIcon = false;
+    protected /*private*/ IconLoader mIconLoader;
+    protected /*private*/ CommandParams mCmdParams = null;
+    protected /*private*/ int mIconLoadState = LOAD_NO_ICON;
+    protected /*private*/ RilMessageDecoder mCaller = null;
+    protected /*private*/ boolean mloadIcon = false;
     private String mSavedLanguage;
     private String mRequestedLanguage;
-
     // constants
-    static final int MSG_ID_LOAD_ICON_DONE = 1;
+    protected static final int MSG_ID_LOAD_ICON_DONE = 1;
 
     // loading icons state parameters.
-    static final int LOAD_NO_ICON           = 0;
-    static final int LOAD_SINGLE_ICON       = 1;
-    static final int LOAD_MULTI_ICONS       = 2;
+    protected static final int LOAD_NO_ICON           = 0;
+    protected static final int LOAD_SINGLE_ICON       = 1;
+    protected static final int LOAD_MULTI_ICONS       = 2;
 
     // Command Qualifier values for PLI command
-    static final int DTTZ_SETTING                           = 0x03;
-    static final int LANGUAGE_SETTING                       = 0x04;
+    public static final int DTTZ_SETTING                           = 0x03;
+    public static final int LANGUAGE_SETTING                       = 0x04;
 
     // Command Qualifier value for language notification command
     static final int NON_SPECIFIC_LANGUAGE                  = 0x00;
@@ -84,8 +87,9 @@ class CommandParamsFactory extends Handler {
     //
     // No issues for GSM 7 bit packed format encoding.
 
-    private static final int MAX_GSM7_DEFAULT_CHARS = 239;
-    private static final int MAX_UCS2_CHARS = 118;
+    protected /*private*/ static final int MAX_GSM7_DEFAULT_CHARS = 239;
+    protected /*private*/ static final int MAX_UCS2_CHARS = 118;
+    // MTK-END
 
     static synchronized CommandParamsFactory getInstance(RilMessageDecoder caller,
             IccFileHandler fh) {
@@ -93,12 +97,19 @@ class CommandParamsFactory extends Handler {
             return sInstance;
         }
         if (fh != null) {
-            return new CommandParamsFactory(caller, fh);
+            // MTK-START
+            // return new CommandParamsFactory(caller, fh);
+            return TelephonyComponentFactory.getInstance()
+                    .inject(TelephonyComponentFactory.class.getName())
+                    .makeCommandParamsFactory(caller, fh);
+            // MTK-END
         }
         return null;
     }
 
-    private CommandParamsFactory(RilMessageDecoder caller, IccFileHandler fh) {
+    // MTK-START
+    public /*private*/ CommandParamsFactory(RilMessageDecoder caller, IccFileHandler fh) {
+    // MTK-END
         mCaller = caller;
         mIconLoader = IconLoader.getInstance(this, fh);
     }
@@ -122,7 +133,9 @@ class CommandParamsFactory extends Handler {
         return cmdDet;
     }
 
-    void make(BerTlv berTlv) {
+    // MTK-START
+    public void make(BerTlv berTlv) {
+    // MTK-END
         if (berTlv == null) {
             return;
         }
@@ -242,8 +255,9 @@ class CommandParamsFactory extends Handler {
             break;
         }
     }
-
-    private ResultCode setIcons(Object data) {
+    // MTK-START
+    protected /*private*/ ResultCode setIcons(Object data) {
+    // MTK-END
         Bitmap[] icons = null;
         int iconIndex = 0;
 
@@ -277,8 +291,9 @@ class CommandParamsFactory extends Handler {
         }
         return ResultCode.OK;
     }
-
-    private void sendCmdParams(ResultCode resCode) {
+    // MTK-START
+    protected /*private*/ void sendCmdParams(ResultCode resCode) {
+    // MTK-END
         mCaller.sendMsgParamsDecoded(resCode, mCmdParams);
     }
 
@@ -291,9 +306,11 @@ class CommandParamsFactory extends Handler {
      * @return A ComprehensionTlv object that has the tag value of {@code tag}.
      *         If no object is found with the tag, null is returned.
      */
+    // MTK-START
     @UnsupportedAppUsage
-    private ComprehensionTlv searchForTag(ComprehensionTlvTag tag,
+    protected /*private*/ ComprehensionTlv searchForTag(ComprehensionTlvTag tag,
             List<ComprehensionTlv> ctlvs) {
+    // MTK-END
         Iterator<ComprehensionTlv> iter = ctlvs.iterator();
         return searchForNextTag(tag, iter);
     }
@@ -310,9 +327,11 @@ class CommandParamsFactory extends Handler {
      * @return A ComprehensionTlv object that has the tag value of {@code tag}.
      *         If no object is found with the tag, null is returned.
      */
+    // MTK-START
     @UnsupportedAppUsage
-    private ComprehensionTlv searchForNextTag(ComprehensionTlvTag tag,
+    protected /*private*/ ComprehensionTlv searchForNextTag(ComprehensionTlvTag tag,
             Iterator<ComprehensionTlv> iter) {
+    // MTK-END
         int tagValue = tag.value();
         while (iter.hasNext()) {
             ComprehensionTlv ctlv = iter.next();
@@ -333,9 +352,11 @@ class CommandParamsFactory extends Handler {
      *         asynchronous processing is required.
      * @throws ResultException
      */
-    private boolean processDisplayText(CommandDetails cmdDet,
+    // MTK-START
+    protected /*private*/ boolean processDisplayText(CommandDetails cmdDet,
             List<ComprehensionTlv> ctlvs)
             throws ResultException {
+    // MTK-END
 
         CatLog.d(this, "process DisplayText");
 
@@ -445,8 +466,10 @@ class CommandParamsFactory extends Handler {
      *         asynchronous processing is required.
      * @throws ResultException
      */
-    private boolean processGetInkey(CommandDetails cmdDet,
+    // MTK-START
+    protected /*private*/ boolean processGetInkey(CommandDetails cmdDet,
             List<ComprehensionTlv> ctlvs) throws ResultException {
+    // MTK-END
 
         CatLog.d(this, "process GetInkey");
 
@@ -504,8 +527,10 @@ class CommandParamsFactory extends Handler {
      *         asynchronous processing is required.
      * @throws ResultException
      */
-    private boolean processGetInput(CommandDetails cmdDet,
+    // MTK-START
+    protected /*private*/ boolean processGetInput(CommandDetails cmdDet,
             List<ComprehensionTlv> ctlvs) throws ResultException {
+    // MTK-END
 
         CatLog.d(this, "process GetInput");
 
@@ -590,8 +615,10 @@ class CommandParamsFactory extends Handler {
      *         asynchronous processing is required.
      * @throws ResultException
      */
-    private boolean processSelectItem(CommandDetails cmdDet,
+    // MTK-START
+    protected /*private*/ boolean processSelectItem(CommandDetails cmdDet,
             List<ComprehensionTlv> ctlvs) throws ResultException {
+    // MTK-END
 
         CatLog.d(this, "process SelectItem");
 
@@ -699,8 +726,10 @@ class CommandParamsFactory extends Handler {
      * @return true if the command is processing is pending and additional
      *         asynchronous processing is required.
      */
-    private boolean processEventNotify(CommandDetails cmdDet,
+    // MTK-START
+    protected /*private*/ boolean processEventNotify(CommandDetails cmdDet,
             List<ComprehensionTlv> ctlvs) throws ResultException {
+    // MTK-END
 
         CatLog.d(this, "process EventNotify");
 
@@ -740,8 +769,10 @@ class CommandParamsFactory extends Handler {
      *         processing is  not pending and additional asynchronous processing
      *         is not required.
      */
-    private boolean processSetUpEventList(CommandDetails cmdDet,
+    // MTK-START
+    protected /*private*/ boolean processSetUpEventList(CommandDetails cmdDet,
             List<ComprehensionTlv> ctlvs) {
+    // MTK-END
 
         CatLog.d(this, "process SetUpEventList");
         ComprehensionTlv ctlv = searchForTag(ComprehensionTlvTag.EVENT_LIST, ctlvs);
@@ -790,8 +821,10 @@ class CommandParamsFactory extends Handler {
      *         asynchronous processing is required.
      * @throws ResultException
      */
-    private boolean processLaunchBrowser(CommandDetails cmdDet,
+    // MTK-START
+    protected /*private*/ boolean processLaunchBrowser(CommandDetails cmdDet,
             List<ComprehensionTlv> ctlvs) throws ResultException {
+    // MTK-END
 
         CatLog.d(this, "process LaunchBrowser");
 
@@ -863,8 +896,10 @@ class CommandParamsFactory extends Handler {
      *         asynchronous processing is required.t
      * @throws ResultException
      */
-    private boolean processPlayTone(CommandDetails cmdDet,
+    // MTK-START
+    protected /*private*/ boolean processPlayTone(CommandDetails cmdDet,
             List<ComprehensionTlv> ctlvs) throws ResultException {
+    // MTK-END
 
         CatLog.d(this, "process PlayTone");
 
@@ -933,9 +968,11 @@ class CommandParamsFactory extends Handler {
      * @return true if the command is processing is pending and additional
      *         asynchronous processing is required.
      */
-    private boolean processSetupCall(CommandDetails cmdDet,
+    // MTK-START
+    protected /*private*/ boolean processSetupCall(CommandDetails cmdDet,
             List<ComprehensionTlv> ctlvs) throws ResultException {
         CatLog.d(this, "process SetupCall");
+    // MTK-END
 
         Iterator<ComprehensionTlv> iter = ctlvs.iterator();
         ComprehensionTlv ctlv = null;
@@ -984,9 +1021,10 @@ class CommandParamsFactory extends Handler {
         }
         return false;
     }
-
-    private boolean processProvideLocalInfo(CommandDetails cmdDet, List<ComprehensionTlv> ctlvs)
-            throws ResultException {
+    // MTK-START
+    protected /*private*/ boolean processProvideLocalInfo(CommandDetails cmdDet,
+            List<ComprehensionTlv> ctlvs) throws ResultException {
+    // MTK-END
         CatLog.d(this, "process ProvideLocalInfo");
         switch (cmdDet.commandQualifier) {
             case DTTZ_SETTING:
@@ -1018,8 +1056,10 @@ class CommandParamsFactory extends Handler {
      *         processing is  not pending and additional asynchronous processing
      *         is not required.
      */
-    private boolean processLanguageNotification(CommandDetails cmdDet, List<ComprehensionTlv> ctlvs)
-            throws ResultException {
+    // MTK-START
+    protected /*private*/ boolean processLanguageNotification(CommandDetails cmdDet,
+            List<ComprehensionTlv> ctlvs) throws ResultException {
+    // MTK-END
         CatLog.d(this, "process Language Notification");
 
         String desiredLanguage = null;
@@ -1066,8 +1106,10 @@ class CommandParamsFactory extends Handler {
         return false;
     }
 
-    private boolean processBIPClient(CommandDetails cmdDet,
+    // MTK-START
+    protected /*private*/ boolean processBIPClient(CommandDetails cmdDet,
                                      List<ComprehensionTlv> ctlvs) throws ResultException {
+    // MTK-END
         AppInterface.CommandType commandType =
                                     AppInterface.CommandType.fromInt(cmdDet.typeOfCommand);
         if (commandType != null) {

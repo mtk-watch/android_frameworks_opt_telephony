@@ -45,12 +45,13 @@ public class ReadRecInd extends GenericPdu {
         setReadStatus(readStatus);
     }
 
+    /*MTK Change access type*/
     /**
      * Constructor with given headers.
      *
      * @param headers Headers for this PDU.
      */
-    ReadRecInd(PduHeaders headers) {
+    public ReadRecInd(PduHeaders headers) {
         super(headers);
     }
 

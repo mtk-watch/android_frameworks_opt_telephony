@@ -23,10 +23,11 @@ import com.google.android.mms.InvalidHeaderValueException;
  * Multimedia message PDU.
  */
 public class MultimediaMessagePdu extends GenericPdu{
+    /* MTK Change access type */
     /**
      * The body.
      */
-    private PduBody mMessageBody;
+    protected PduBody mMessageBody;
 
     /**
      * Constructor.

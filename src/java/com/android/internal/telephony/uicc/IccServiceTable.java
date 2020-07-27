@@ -42,7 +42,9 @@ public abstract class IccServiceTable {
      * @param service the service number as a zero-based offset (the enum ordinal)
      * @return true if the service is available; false otherwise
      */
-    protected boolean isAvailable(int service) {
+    // MTK START: add-on
+    public boolean isAvailable(int service) {
+    // MTK END
         int offset = service / 8;
         if (offset >= mServiceTable.length) {
             // Note: Enums are zero-based, but the TS service numbering is one-based

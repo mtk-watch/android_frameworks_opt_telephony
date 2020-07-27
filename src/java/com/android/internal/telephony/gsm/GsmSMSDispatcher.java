@@ -40,13 +40,19 @@ import com.android.internal.telephony.util.SMSDispatcherUtil;
 import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
-public final class GsmSMSDispatcher extends SMSDispatcher {
+// MTK-START
+// Revised for sub class
+public class GsmSMSDispatcher extends SMSDispatcher {
+// MTK-END
     private static final String TAG = "GsmSMSDispatcher";
     protected UiccController mUiccController = null;
-    private AtomicReference<IccRecords> mIccRecords = new AtomicReference<IccRecords>();
-    private AtomicReference<UiccCardApplication> mUiccApplication =
+    // MTK-START
+    // Change visibility for sub class
+    protected AtomicReference<IccRecords> mIccRecords = new AtomicReference<IccRecords>();
+    protected AtomicReference<UiccCardApplication> mUiccApplication =
             new AtomicReference<UiccCardApplication>();
-    private GsmInboundSmsHandler mGsmInboundSmsHandler;
+    protected GsmInboundSmsHandler mGsmInboundSmsHandler;
+    // MTK-END
 
     /** Status report received */
     private static final int EVENT_NEW_SMS_STATUS_REPORT = 100;
@@ -69,7 +75,10 @@ public final class GsmSMSDispatcher extends SMSDispatcher {
     }
 
     @Override
-    protected String getFormat() {
+    // MTK-START
+    // Modification for sub class
+    public String getFormat() {
+    // MTK-END
         return SmsConstants.FORMAT_3GPP;
     }
 
@@ -228,7 +237,10 @@ public final class GsmSMSDispatcher extends SMSDispatcher {
                         UiccController.APP_FAM_3GPP);
     }
 
-    private void onUpdateIccAvailability() {
+    // MTK-START
+    // Modification for sub class
+    protected void onUpdateIccAvailability() {
+    // MTK-END
         if (mUiccController == null ) {
             return;
         }

@@ -131,7 +131,7 @@ public class GsmCdmaPhone extends Phone {
     // Key used to read/write the SIM IMSI used for storing the voice mail
     private static final String VM_SIM_IMSI = "vm_sim_imsi_key";
     /** List of Registrants to receive Supplementary Service Notifications. */
-    private RegistrantList mSsnRegistrants = new RegistrantList();
+    protected RegistrantList mSsnRegistrants = new RegistrantList();
 
     //CDMA
     // Default Emergency Callback Mode exit timer
@@ -139,10 +139,12 @@ public class GsmCdmaPhone extends Phone {
     private static final String VM_NUMBER_CDMA = "vm_number_key_cdma";
     public static final int RESTART_ECM_TIMER = 0; // restart Ecm timer
     public static final int CANCEL_ECM_TIMER = 1; // cancel Ecm timer
-    private static final String PREFIX_WPS = "*272";
-    private CdmaSubscriptionSourceManager mCdmaSSM;
+    // MTK SATRT: add-on
+    protected CdmaSubscriptionSourceManager mCdmaSSM;
+    protected static final String PREFIX_WPS = "*272";
+    // MTK END
     public int mCdmaSubscriptionSource = CdmaSubscriptionSourceManager.SUBSCRIPTION_SOURCE_UNKNOWN;
-    private PowerManager.WakeLock mWakeLock;
+    protected PowerManager.WakeLock mWakeLock;
     // mEcmExitRespRegistrant is informed after the phone has been exited
     @UnsupportedAppUsage
     private Registrant mEcmExitRespRegistrant;
@@ -176,17 +178,22 @@ public class GsmCdmaPhone extends Phone {
     @UnsupportedAppUsage
     public ServiceStateTracker mSST;
     public EmergencyNumberTracker mEmergencyNumberTracker;
+    
     @UnsupportedAppUsage
-    private ArrayList <MmiCode> mPendingMMIs = new ArrayList<MmiCode>();
-    private IccPhoneBookInterfaceManager mIccPhoneBookIntManager;
-
+    protected ArrayList <MmiCode> mPendingMMIs = new ArrayList<MmiCode>();
+    // M: Revise for add-on (protected)
+    protected IccPhoneBookInterfaceManager mIccPhoneBookIntManager;
+    // Used for identify the carrier of current subscription
+    private CarrierResolver mCarrierResolver;
+    
     private int mPrecisePhoneType;
 
     // mEcmTimerResetRegistrants are informed after Ecm timer is canceled or re-started
     private final RegistrantList mEcmTimerResetRegistrants = new RegistrantList();
 
     private String mImei;
-    private String mImeiSv;
+    /// M:  For telephony add-on, just change access type: private -> protected
+    protected String mImeiSv;
     private String mVmNumber;
 
     // Create Cfu (Call forward unconditional) so that dialing number &
@@ -203,12 +210,16 @@ public class GsmCdmaPhone extends Phone {
         }
     }
 
+    // MTK-START
+    // M: Revise for SMS add-on (protected) 
     @UnsupportedAppUsage
-    private IccSmsInterfaceManager mIccSmsInterfaceManager;
+    protected IccSmsInterfaceManager mIccSmsInterfaceManager;
+    // MTK-END
 
     private boolean mResetModemOnRadioTechnologyChange = false;
 
-    private int mRilVersion;
+    /// M: For telephony add-on, just change access type: private -> protected
+    protected int mRilVersion;
     private boolean mBroadcastEmergencyCallStateChanges = false;
     private CarrierKeyDownloadManager mCDM;
     private CarrierInfoManager mCIM;
@@ -301,7 +312,7 @@ public class GsmCdmaPhone extends Phone {
         }
     };
 
-    private void initOnce(CommandsInterface ci) {
+    protected void initOnce(CommandsInterface ci) {
         if (ci instanceof SimulatedRadioControl) {
             mSimulatedRadioControl = (SimulatedRadioControl) ci;
         }
@@ -355,9 +366,12 @@ public class GsmCdmaPhone extends Phone {
         mCIM = new CarrierInfoManager();
     }
 
-    private void initRatSpecific(int precisePhoneType) {
+    protected void initRatSpecific(int precisePhoneType) {
         mPendingMMIs.clear();
-        mIccPhoneBookIntManager.updateIccRecords(null);
+        // M: Revise for add-on
+        if (needResetPhbIntMgr()) {
+            mIccPhoneBookIntManager.updateIccRecords(null);
+        }
         mEsn = null;
         mMeid = null;
 
@@ -453,7 +467,8 @@ public class GsmCdmaPhone extends Phone {
         return mPrecisePhoneType == PhoneConstants.PHONE_TYPE_CDMA_LTE;
     }
 
-    private void switchPhoneType(int precisePhoneType) {
+    /// M: For telephony add-on, just change access type: private -> protected
+    protected void switchPhoneType(int precisePhoneType) {
         removeCallbacks(mExitEcmRunnable);
 
         initRatSpecific(precisePhoneType);
@@ -987,7 +1002,7 @@ public class GsmCdmaPhone extends Phone {
     }
 
     //GSM
-    private boolean handleCallWaitingIncallSupplementaryService(String dialString) {
+    protected boolean handleCallWaitingIncallSupplementaryService(String dialString) {
         int len = dialString.length();
 
         if (len > 2) {
@@ -1024,7 +1039,7 @@ public class GsmCdmaPhone extends Phone {
         return true;
     }
 
-    private boolean handleCallHoldIncallSupplementaryService(String dialString) {
+    protected boolean handleCallHoldIncallSupplementaryService(String dialString) {
         int len = dialString.length();
 
         if (len > 2) {
@@ -1069,7 +1084,7 @@ public class GsmCdmaPhone extends Phone {
         return true;
     }
 
-    private boolean handleMultipartyIncallSupplementaryService(String dialString) {
+    protected boolean handleMultipartyIncallSupplementaryService(String dialString) {
         if (dialString.length() > 1) {
             return false;
         }
@@ -1079,7 +1094,7 @@ public class GsmCdmaPhone extends Phone {
         return true;
     }
 
-    private boolean handleEctIncallSupplementaryService(String dialString) {
+    protected boolean handleEctIncallSupplementaryService(String dialString) {
 
         int len = dialString.length();
 
@@ -1092,7 +1107,7 @@ public class GsmCdmaPhone extends Phone {
         return true;
     }
 
-    private boolean handleCcbsIncallSupplementaryService(String dialString) {
+    protected boolean handleCcbsIncallSupplementaryService(String dialString) {
         if (dialString.length() > 1) {
             return false;
         }
@@ -1381,7 +1396,7 @@ public class GsmCdmaPhone extends Phone {
         return false;
     }
 
-    private void sendUssdResponse(String ussdRequest, CharSequence message, int returnCode,
+    protected void sendUssdResponse(String ussdRequest, CharSequence message, int returnCode,
                                    ResultReceiver wrappedCallback) {
         UssdResponse response = new UssdResponse(ussdRequest, message);
         Bundle returnData = new Bundle();
@@ -1858,7 +1873,7 @@ public class GsmCdmaPhone extends Phone {
     }
 
     @UnsupportedAppUsage
-    private boolean isValidCommandInterfaceCFReason (int commandInterfaceCFReason) {
+    protected boolean isValidCommandInterfaceCFReason (int commandInterfaceCFReason) {
         switch (commandInterfaceCFReason) {
             case CF_REASON_UNCONDITIONAL:
             case CF_REASON_BUSY:
@@ -1882,7 +1897,7 @@ public class GsmCdmaPhone extends Phone {
     }
 
     @UnsupportedAppUsage
-    private boolean isValidCommandInterfaceCFAction (int commandInterfaceCFAction) {
+    protected boolean isValidCommandInterfaceCFAction (int commandInterfaceCFAction) {
         switch (commandInterfaceCFAction) {
             case CF_ACTION_DISABLE:
             case CF_ACTION_ENABLE:
@@ -1895,11 +1910,11 @@ public class GsmCdmaPhone extends Phone {
     }
 
     @UnsupportedAppUsage
-    private boolean isCfEnable(int action) {
+    protected boolean isCfEnable(int action) {
         return (action == CF_ACTION_ENABLE) || (action == CF_ACTION_REGISTRATION);
     }
 
-    private boolean isImsUtEnabledOverCdma() {
+    protected boolean isImsUtEnabledOverCdma() {
         return isPhoneTypeCdmaLte()
             && mImsPhone != null
             && mImsPhone.isUtEnabled();
@@ -2273,14 +2288,14 @@ public class GsmCdmaPhone extends Phone {
         }
     }
 
-    private void onNetworkInitiatedUssd(MmiCode mmi) {
+    protected void onNetworkInitiatedUssd(MmiCode mmi) {
         Rlog.v(LOG_TAG, "onNetworkInitiatedUssd: mmi=" + mmi);
         mMmiCompleteRegistrants.notifyRegistrants(
             new AsyncResult(null, mmi, null));
     }
 
     /** ussdMode is one of CommandsInterface.USSD_MODE_* */
-    private void onIncomingUSSD (int ussdMode, String ussdMessage) {
+    protected void onIncomingUSSD (int ussdMode, String ussdMessage) {
         if (!isPhoneTypeGsm()) {
             loge("onIncomingUSSD: not expected on GSM");
         }
@@ -2338,7 +2353,7 @@ public class GsmCdmaPhone extends Phone {
      * Make sure the network knows our preferred setting.
      */
     @UnsupportedAppUsage
-    private void syncClirSetting() {
+    protected void syncClirSetting() {
         SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(getContext());
         int clirSetting = sp.getInt(CLIR_KEY + getPhoneId(), -1);
         Rlog.i(LOG_TAG, "syncClirSetting: " + CLIR_KEY + getPhoneId() + "=" + clirSetting);
@@ -2888,7 +2903,9 @@ public class GsmCdmaPhone extends Phone {
         }
     }
 
-    private void processIccRecordEvents(int eventCode) {
+    // MTK-START: add on
+    protected void processIccRecordEvents(int eventCode) {
+    // MTK-END
         switch (eventCode) {
             case IccRecords.EVENT_CFI:
                 logi("processIccRecordEvents: EVENT_CFI");
@@ -2960,7 +2977,7 @@ public class GsmCdmaPhone extends Phone {
         }
     }
 
-    private void handleCfuQueryResult(CallForwardInfo[] infos) {
+    protected void handleCfuQueryResult(CallForwardInfo[] infos) {
         IccRecords r = mIccRecords.get();
         if (r != null) {
             if (infos == null || infos.length == 0) {
@@ -3102,7 +3119,9 @@ public class GsmCdmaPhone extends Phone {
         return isProhibited;
     }
 
-    private void registerForIccRecordEvents() {
+    // MTK-START: add on
+    protected void registerForIccRecordEvents() {
+    // MTK-END
         IccRecords r = mIccRecords.get();
         if (r == null) {
             return;
@@ -3121,7 +3140,9 @@ public class GsmCdmaPhone extends Phone {
         }
     }
 
-    private void unregisterForIccRecordEvents() {
+    // MTK-START: add on
+    protected void unregisterForIccRecordEvents() {
+    // MTK-END
         IccRecords r = mIccRecords.get();
         if (r == null) {
             return;
@@ -3477,7 +3498,8 @@ public class GsmCdmaPhone extends Phone {
                 cdmaApplication.getType() == AppType.APPTYPE_RUIM);
     }
 
-    private void phoneObjectUpdater(int newVoiceRadioTech) {
+    /// M:  For telephony add-on, just change access type: private -> protected
+    protected void phoneObjectUpdater(int newVoiceRadioTech) {
         logd("phoneObjectUpdater: newVoiceRadioTech=" + newVoiceRadioTech);
 
         // Check for a voice over lte replacement
@@ -3530,11 +3552,14 @@ public class GsmCdmaPhone extends Phone {
             boolean matchGsm = ServiceState.isGsm(newVoiceRadioTech);
             if ((matchCdma && getPhoneType() == PhoneConstants.PHONE_TYPE_CDMA) ||
                     (matchGsm && getPhoneType() == PhoneConstants.PHONE_TYPE_GSM)) {
-                // Nothing changed. Keep phone as it is.
-                logd("phoneObjectUpdater: No change ignore," +
-                        " newVoiceRadioTech=" + newVoiceRadioTech +
-                        " mActivePhone=" + getPhoneName());
-                return;
+                /// M: If change correct phone type, should continue the phone process.
+                if (!correctPhoneTypeForCdma(matchCdma, newVoiceRadioTech)) {
+                    // Nothing changed. Keep phone as it is.
+                    logd("phoneObjectUpdater: No change ignore," +
+                            " newVoiceRadioTech=" + newVoiceRadioTech +
+                            " mActivePhone=" + getPhoneName());
+                    return;
+                }
             }
             if (!matchCdma && !matchGsm) {
                 loge("phoneObjectUpdater: newVoiceRadioTech=" + newVoiceRadioTech +
@@ -3580,7 +3605,8 @@ public class GsmCdmaPhone extends Phone {
         ActivityManager.broadcastStickyIntent(intent, UserHandle.USER_ALL);
     }
 
-    private void switchVoiceRadioTech(int newVoiceRadioTech) {
+    /// M:  For telephony add-on, just change access type: private -> protected
+    protected void switchVoiceRadioTech(int newVoiceRadioTech) {
 
         String outgoingPhoneName = getPhoneName();
 
@@ -3656,7 +3682,8 @@ public class GsmCdmaPhone extends Phone {
         }
     }
 
-    private UiccProfile getUiccProfile() {
+    /// M: For telephony add-on, just change access type: private -> protected
+    protected UiccProfile getUiccProfile() {
         return UiccController.getInstance().getUiccProfileForPhone(mPhoneId);
     }
 
@@ -3715,7 +3742,9 @@ public class GsmCdmaPhone extends Phone {
     /**
      * @return operator numeric.
      */
-    private String getOperatorNumeric() {
+    // MTK-START: add-on
+    protected String getOperatorNumeric() {
+    // MTK-END
         String operatorNumeric = null;
         if (isPhoneTypeGsm()) {
             IccRecords r = mIccRecords.get();
@@ -3880,16 +3909,16 @@ public class GsmCdmaPhone extends Phone {
     }
 
     @UnsupportedAppUsage
-    private void logd(String s) {
+    protected void logd(String s) {
         Rlog.d(LOG_TAG, "[" + mPhoneId + "] " + s);
     }
 
-    private void logi(String s) {
+    protected void logi(String s) {
         Rlog.i(LOG_TAG, "[" + mPhoneId + "] " + s);
     }
 
     @UnsupportedAppUsage
-    private void loge(String s) {
+    protected void loge(String s) {
         Rlog.e(LOG_TAG, "[" + mPhoneId + "] " + s);
     }
 
@@ -3975,5 +4004,22 @@ public class GsmCdmaPhone extends Phone {
         ttyMode = Settings.Secure.getInt(mContext.getContentResolver(),
                 Settings.Secure.PREFERRED_TTY_MODE, TelecomManager.TTY_MODE_OFF);
         updateUiTtyMode(ttyMode);
+    }
+
+    // M: Override this function if we don't want to reset mIccPhoneBookIntManager.
+    protected boolean needResetPhbIntMgr() {
+        return true;
+    }
+
+    /**
+     * M: If phoneType is CDMALTE and card is CDMA only, change the phoneType to CDMA;
+     * If phoneType is CDMA and card is not CDMA only, change the phoneType to CDMALTE;
+     *
+     * @param matchCdma The newVoiceRadioTech is cmda or not.
+     * @param newVoiceRadioTech The new voice radio_tech.
+     * @return true: phoneType changed; false: phoneType no changed.
+     */
+    protected boolean correctPhoneTypeForCdma(boolean matchCdma, int newVoiceRadioTech) {
+        return false;
     }
 }

@@ -21,6 +21,7 @@ import android.annotation.Nullable;
 import android.content.Context;
 import android.content.res.XmlResourceParser;
 import android.database.Cursor;
+import android.net.NetworkRequest;
 import android.os.Handler;
 import android.os.IDeviceIdleController;
 import android.os.Looper;
@@ -33,18 +34,34 @@ import android.telephony.AccessNetworkConstants.TransportType;
 import android.telephony.Rlog;
 import android.text.TextUtils;
 
+import com.android.internal.telephony.cdma.CdmaInboundSmsHandler;
+import com.android.internal.telephony.cdma.CdmaSMSDispatcher;
 import com.android.internal.telephony.cdma.CdmaSubscriptionSourceManager;
 import com.android.internal.telephony.cdma.EriManager;
 import com.android.internal.telephony.dataconnection.DataEnabledSettings;
 import com.android.internal.telephony.dataconnection.DcTracker;
 import com.android.internal.telephony.dataconnection.TransportManager;
+import com.android.internal.telephony.dataconnection.TelephonyNetworkFactory;
 import com.android.internal.telephony.emergency.EmergencyNumberTracker;
 import com.android.internal.telephony.imsphone.ImsExternalCallTracker;
 import com.android.internal.telephony.imsphone.ImsPhone;
 import com.android.internal.telephony.imsphone.ImsPhoneCallTracker;
 import com.android.internal.telephony.uicc.IccCardStatus;
 import com.android.internal.telephony.uicc.UiccCard;
+// MTK-START: add-on
+import com.android.internal.telephony.uicc.UiccController;
+// MTK-END
 import com.android.internal.telephony.uicc.UiccProfile;
+
+/// M: import data-related classes @{
+import com.android.internal.telephony.dataconnection.DataConnection;
+import com.android.internal.telephony.dataconnection.DataServiceManager;
+import com.android.internal.telephony.dataconnection.DcController;
+import com.android.internal.telephony.dataconnection.DcRequest;
+import com.android.internal.telephony.dataconnection.DcTesterFailBringUpAll;
+import com.android.internal.telephony.RetryManager;
+import com.android.internal.telephony.uicc.UiccController;
+/// @}
 
 import dalvik.system.PathClassLoader;
 
@@ -61,6 +78,29 @@ import java.util.stream.Collectors;
 
 
 
+// SMS PART START
+import com.android.internal.telephony.cdma.CdmaInboundSmsHandler;
+import com.android.internal.telephony.cdma.CdmaSMSDispatcher;
+import com.android.internal.telephony.gsm.GsmSMSDispatcher;
+import com.android.internal.telephony.gsm.GsmInboundSmsHandler;
+import com.android.internal.telephony.ImsSmsDispatcher;
+import com.android.internal.telephony.SmsBroadcastUndelivered;
+import com.android.internal.telephony.WapPushOverSms;
+import com.android.internal.telephony.SmsHeader;
+import com.android.internal.telephony.gsm.GsmCellBroadcastHandler;
+import com.android.internal.telephony.SmsDispatchersController;
+// SMS PART END
+// STK-START
+import android.os.Looper;
+import com.android.internal.telephony.cat.CatService;
+import com.android.internal.telephony.cat.CommandParamsFactory;
+import com.android.internal.telephony.cat.IconLoader;
+import com.android.internal.telephony.cat.RilMessageDecoder;
+import com.android.internal.telephony.uicc.IccFileHandler;
+import com.android.internal.telephony.uicc.IccRecords;
+import com.android.internal.telephony.uicc.UiccCardApplication;
+// STK-END
+
 /**
  * This class has one-line methods to instantiate objects only. The purpose is to make code
  * unit-test friendly and use this class as a way to do dependency injection. Instantiating objects
@@ -71,6 +111,7 @@ public class TelephonyComponentFactory {
     private static final String TAG = TelephonyComponentFactory.class.getSimpleName();
 
     private static TelephonyComponentFactory sInstance;
+    public static final String LOG_TAG = "TelephonyComponentFactory";
 
     private InjectedComponents mInjectedComponents;
 
@@ -95,6 +136,7 @@ public class TelephonyComponentFactory {
          * 3) JarPath is on a READ-ONLY partition.
          */
         private @Nullable String getValidatedPaths() {
+            Rlog.e(TAG, "getValidatedPaths: " + mPackageName + " ," + mJarPath);
             if (TextUtils.isEmpty(mPackageName) || TextUtils.isEmpty(mJarPath)) {
                 return null;
             }
@@ -105,9 +147,11 @@ public class TelephonyComponentFactory {
                         try {
                             // This will also throw an error if the target doesn't exist.
                             StructStatVfs vfs = Os.statvfs(s);
+                            Rlog.e(TAG, "StructStatVfs: " + vfs.f_flag + " ,"
+                                    + OsConstants.ST_RDONLY);
                             return (vfs.f_flag & OsConstants.ST_RDONLY) != 0;
                         } catch (ErrnoException e) {
-                            Rlog.w(TAG, "Injection jar is not protected , path: " + s
+                            Rlog.e(TAG, "Injection jar is not protected , path: " + s
                                     + e.getMessage());
                             return false;
                         }
@@ -172,8 +216,10 @@ public class TelephonyComponentFactory {
                 int type;
                 while ((type = parser.next()) != XmlPullParser.END_DOCUMENT
                         && (type != XmlPullParser.END_TAG || parser.getDepth() > outerDepth)) {
+                    Rlog.i(TAG, "parseComponent: type " + type);
                     if (type == XmlPullParser.TEXT) {
                         mComponentNames.add(parser.getText());
+                        Rlog.i(TAG, "parseComponent: text " + parser.getText());
                     }
                 }
             } catch (XmlPullParserException | IOException e) {
@@ -251,7 +297,7 @@ public class TelephonyComponentFactory {
             mInjectedComponents.parseXml(parser);
             mInjectedComponents.makeInjectedInstance();
             boolean injectSuccessful = !TextUtils.isEmpty(mInjectedComponents.getValidatedPaths());
-            Rlog.d(TAG, "Total components injected: " + (injectSuccessful
+            Rlog.i(TAG, "Total components injected: " + (injectSuccessful
                     ? mInjectedComponents.mComponentNames.size() : 0));
         }
     }
@@ -271,6 +317,13 @@ public class TelephonyComponentFactory {
 
     public GsmCdmaCallTracker makeGsmCdmaCallTracker(GsmCdmaPhone phone) {
         return new GsmCdmaCallTracker(phone);
+    }
+
+    /**
+     * Create a default CallManager instance
+     */
+    public CallManager makeCallManager() {
+        return new CallManager();
     }
 
     public SmsStorageMonitor makeSmsStorageMonitor(Phone phone) {
@@ -335,9 +388,35 @@ public class TelephonyComponentFactory {
         return new IccSmsInterfaceManager(phone);
     }
 
+    // MTK START: add-on
+    public SubscriptionController makeSubscriptionController(Phone phone) {
+        return new SubscriptionController(phone);
+    }
+
+    public SubscriptionController makeSubscriptionController(Context c, CommandsInterface[] ci) {
+        return new SubscriptionController(c);
+    }
+
+    public SubscriptionInfoUpdater makeSubscriptionInfoUpdater(Looper looper, Context context,
+            Phone[] phone, CommandsInterface[] ci) {
+        return new SubscriptionInfoUpdater(looper, context, phone, ci);
+    }
+
+    public MultiSimSettingController makeMultiSimSettingController(Context context,
+            SubscriptionController sc) {
+        return new MultiSimSettingController(context, sc);
+    }
+    // MTK END
+
     /**
      * Create a new UiccProfile object.
      */
+    // MTK-START: add-on
+    public UiccController makeUiccController(Context c, CommandsInterface[] ci) {
+        return new UiccController(c, ci);
+    }
+    // MTK-END
+
     public UiccProfile makeUiccProfile(Context context, CommandsInterface ci, IccCardStatus ics,
                                        int phoneId, UiccCard uiccCard, Object lock) {
         return new UiccProfile(context, ci, ics, phoneId, uiccCard, lock);
@@ -380,6 +459,77 @@ public class TelephonyComponentFactory {
         return new InboundSmsTracker(cursor, isCurrentFormat3gpp2);
     }
 
+    /**
+     * Create a SmsHeader
+     */
+    public SmsHeader makeSmsHeader() {
+        return new SmsHeader();
+    }
+
+    /**
+     * Create an ImsSmsDispatcher
+     */
+    public ImsSmsDispatcher makeImsSmsDispatcher(Phone phone,
+            SmsDispatchersController smsDispatchersController) {
+        return new ImsSmsDispatcher(phone, smsDispatchersController);
+    }
+
+    /**
+     * Create a dispatcher for CDMA SMS.
+     */
+    public CdmaSMSDispatcher makeCdmaSMSDispatcher(Phone phone,
+            SmsDispatchersController smsDispatchersController) {
+        return new CdmaSMSDispatcher(phone, smsDispatchersController);
+    }
+
+    /**
+     * Create a dispatcher for GSM SMS.
+     */
+    public GsmSMSDispatcher makeGsmSMSDispatcher(Phone phone,
+            SmsDispatchersController smsDispatchersController,
+            GsmInboundSmsHandler gsmInboundSmsHandler) {
+        return new GsmSMSDispatcher(phone, smsDispatchersController, gsmInboundSmsHandler);
+    }
+
+    /**
+     * Create an object of SmsBroadcastUndelivered.
+     */
+    public void makeSmsBroadcastUndelivered(Context context,
+            GsmInboundSmsHandler gsmInboundSmsHandler,
+            CdmaInboundSmsHandler cdmaInboundSmsHandler) {
+        SmsBroadcastUndelivered.initialize(context, gsmInboundSmsHandler, cdmaInboundSmsHandler);
+    }
+
+    public WapPushOverSms makeWapPushOverSms(Context context) {
+        return new WapPushOverSms(context);
+    }
+
+    /**
+     * Create an object of GsmInboundSmsHandler.
+     */
+    public GsmInboundSmsHandler makeGsmInboundSmsHandler(Context context,
+            SmsStorageMonitor storageMonitor, Phone phone) {
+        return GsmInboundSmsHandler.makeInboundSmsHandler(context, storageMonitor, phone);
+    }
+
+    /**
+     * Create an object of GsmCellBroadcastHandler.
+     */
+    public GsmCellBroadcastHandler makeGsmCellBroadcastHandler(Context context,
+            Phone phone) {
+        return GsmCellBroadcastHandler.makeGsmCellBroadcastHandler(context, phone);
+    }
+
+    /**
+     * Create an object of SmsDispatchersController.
+     */
+    public SmsDispatchersController makeSmsDispatchersController(Phone phone,
+            SmsStorageMonitor storageMonitor,
+            SmsUsageMonitor usageMonitor) {
+        return new SmsDispatchersController(
+                phone, phone.mSmsStorageMonitor, phone.mSmsUsageMonitor);
+    }
+
     public ImsPhoneCallTracker makeImsPhoneCallTracker(ImsPhone imsPhone) {
         return new ImsPhoneCallTracker(imsPhone);
     }
@@ -410,9 +560,31 @@ public class TelephonyComponentFactory {
         return CdmaSubscriptionSourceManager.getInstance(context, ci, h, what, obj);
     }
 
+    // MTK-START: add on
+    public CdmaSubscriptionSourceManager
+    makeCdmaSubscriptionSourceManager(Context context, CommandsInterface ci, Handler h,
+            int what, Object obj) {
+        return new CdmaSubscriptionSourceManager(context, ci);
+    }
+
+    /// M: eMBMS feature
+    /**
+     * Create EmbmsAdaptor
+     */
+    public void initEmbmsAdaptor(Context context, CommandsInterface[] sCommandsInterfaces) {
+    }
+    /// M: eMBMS end
+
+    // MTK-END
     public IDeviceIdleController getIDeviceIdleController() {
         return IDeviceIdleController.Stub.asInterface(
                 ServiceManager.getService(Context.DEVICE_IDLE_CONTROLLER));
+    }
+
+    /**
+     * Create a supplementary service manager instance
+     */
+    public void makeSuppServManager(Context context, Phone[] phones) {
     }
 
     public LocaleTracker makeLocaleTracker(Phone phone, NitzStateMachine nitzStateMachine,
@@ -422,5 +594,195 @@ public class TelephonyComponentFactory {
 
     public DataEnabledSettings makeDataEnabledSettings(Phone phone) {
         return new DataEnabledSettings(phone);
+    }
+
+    /**
+     * Create RadioManager
+     */
+    public void initRadioManager(Context context, int numPhones,
+            CommandsInterface[] sCommandsInterfaces) {
+    }
+
+    /**
+     * Create CdmaInboundSmsHandler.
+     *
+     *  @param context  the context of the phone process
+     *  @param storageMonitor  the object of SmsStorageMonitor
+     *  @param phone  the object of the Phone
+     *  @param smsDispatcher the object of the CdmaSMSDispatcher
+     *
+     *  @return the object of CdmaInboundSmsHandler
+     */
+    public CdmaInboundSmsHandler makeCdmaInboundSmsHandler(Context context,
+            SmsStorageMonitor storageMonitor, Phone phone, CdmaSMSDispatcher smsDispatcher) {
+        return new CdmaInboundSmsHandler(context, storageMonitor, phone, smsDispatcher);
+    }
+
+    /**
+     * Create a data sub selector instance
+     */
+    public void makeDataSubSelector(Context context, int numPhones) {
+    }
+
+    /**
+     * Create telephony network factories
+     */
+    public TelephonyNetworkFactory makeTelephonyNetworkFactories(
+            SubscriptionMonitor subscriptionMonitor, Looper looper, Phone phone) {
+        return new TelephonyNetworkFactory(subscriptionMonitor, looper, phone);
+    }
+
+    /**
+     * Create a default phone switcher
+     */
+    public PhoneSwitcher makePhoneSwitcher(int maxActivePhones, int numPhones,
+            Context context, SubscriptionController subscriptionController, Looper looper,
+            ITelephonyRegistry tr, CommandsInterface[] cis, Phone[] phones) {
+        return new PhoneSwitcher(maxActivePhones, numPhones, context, subscriptionController,
+                looper, tr, cis, phones);
+    }
+
+    /**
+     * Create a smart data swtich assistant instance
+     */
+    public void makeSmartDataSwitchAssistant(Context context, Phone[] phones) {
+    }
+
+     /**
+     * Create a dc request instance.
+     * @param nr {@link NetworkRequest} describing this request.
+     * @param context  the context of the phone process
+     *
+     * @return the object of DcRequest
+     */
+    public DcRequest makeDcRequest(NetworkRequest nr, Context context) {
+        return new DcRequest(nr, context);
+    }
+
+     /**
+     * Create world phone instance .
+     */
+    public void makeWorldPhoneManager() {
+    }
+
+    /**
+     * Create a proxy controller for radio capability switch.
+     */
+    public ProxyController makeProxyController(Context context, Phone[] phone,
+            UiccController uiccController, CommandsInterface[] ci, PhoneSwitcher ps) {
+        return new ProxyController(context, phone, uiccController, ci, ps);
+    }
+
+    /**
+     * Create a default phone.
+     */
+    public GsmCdmaPhone makePhone(Context context, CommandsInterface ci, PhoneNotifier notifier,
+            int phoneId, int precisePhoneType,
+            TelephonyComponentFactory telephonyComponentFactory) {
+        return new GsmCdmaPhone(context, ci, notifier, phoneId, precisePhoneType,
+                telephonyComponentFactory);
+    }
+
+    /**
+     * Create a default RIL.
+     */
+    public RIL makeRil(Context context, int preferredNetworkType, int cdmaSubscription,
+            Integer instanceId) {
+        return new RIL(context, preferredNetworkType, cdmaSubscription, instanceId);
+    }
+
+    /**
+     * Create a default PhoneNotifier.
+     */
+    public DefaultPhoneNotifier makeDefaultPhoneNotifier() {
+        Rlog.d(LOG_TAG , "makeDefaultPhoneNotifier aosp");
+        return new DefaultPhoneNotifier();
+    }
+
+    /**
+     * initialize GwsdService instance.
+     */
+    public void initGwsdService(Context context) {
+    }
+
+    /**
+     * Create a default CatService.
+     */
+    public CatService makeCatService(CommandsInterface ci, UiccCardApplication ca, IccRecords ir,
+            Context context, IccFileHandler fh, UiccProfile uiccProfile, int slotId) {
+        return new CatService(ci, ca, ir, context, fh, uiccProfile, slotId);
+   }
+
+    /**
+     * Create a default RilMessageDecoder.
+     */
+    public RilMessageDecoder makeRilMessageDecoder(Handler caller, IccFileHandler fh,
+            int slotId) {
+        return new RilMessageDecoder(caller, fh);
+    }
+
+    /**
+     * Create a default CommandParamsFactory.
+     */
+    public CommandParamsFactory makeCommandParamsFactory(RilMessageDecoder caller,
+            IccFileHandler fh) {
+        return new CommandParamsFactory(caller, fh);
+    }
+
+    /**
+     * Create a default IconLoader
+     */
+    public IconLoader makeIconLoader(Looper looper , IccFileHandler fh) {
+        return new IconLoader(looper, fh);
+    }
+
+    /// M: Add data-related anchor methods @{
+    /**
+     * Create a dc controller instance
+     */
+    public DcController makeDcController(String name, Phone phone, DcTracker dct,
+            DataServiceManager dataServiceManager, Handler handler) {
+        return new DcController(name, phone, dct, dataServiceManager, handler);
+    }
+
+    /**
+     * Create a retry manager instance
+     */
+    public RetryManager makeRetryManager(Phone phone, String apnType) {
+        return new RetryManager(phone, apnType);
+    }
+
+    /**
+     * Create a data connection instance
+     */
+    public DataConnection makeDataConnection(Phone phone, String name, int id,
+            DcTracker dct, DataServiceManager dataServiceManager,
+            DcTesterFailBringUpAll failBringUpAll, DcController dcc) {
+        return new DataConnection(phone, name, id, dct, dataServiceManager, failBringUpAll, dcc);
+    }
+
+    /**
+     * Create a data connection helper instance.
+     */
+    public void makeDcHelper(Context context, Phone[] phones) {
+    }
+
+    /**
+     * Create a ImsPhone.
+     */
+    public ImsPhone makeImsPhone(Context context, PhoneNotifier phoneNotifier, Phone defaultPhone) {
+        return new ImsPhone(context, phoneNotifier, defaultPhone);
+    }
+
+    /**
+     * initialize carrier express instance .
+     */
+    public void initCarrierExpress() {
+    }
+
+    /**
+     * Create a network status updater instance
+     */
+    public void makeNetworkStatusUpdater(Phone[] phones, int numPhones) {
     }
 }

@@ -47,6 +47,9 @@ import com.android.internal.telephony.PhoneConstants;
 import com.android.internal.telephony.PhoneFactory;
 import com.android.internal.telephony.RadioConfig;
 import com.android.internal.telephony.SubscriptionInfoUpdater;
+// MTK-START: add-on
+import com.android.internal.telephony.TelephonyComponentFactory;
+// MTK-END
 import com.android.internal.telephony.uicc.euicc.EuiccCard;
 
 import java.io.FileDescriptor;
@@ -102,8 +105,10 @@ import java.util.Set;
  * See also {@link com.android.internal.telephony.IccCard}
  */
 public class UiccController extends Handler {
-    private static final boolean DBG = true;
-    private static final boolean VDBG = false; //STOPSHIP if true
+    // MTK-START: add-on
+    protected static final boolean DBG = true;
+    protected static final boolean VDBG = false; //STOPSHIP if true
+    // MTK-END
     private static final String LOG_TAG = "UiccController";
 
     public static final int INVALID_SLOT_ID = -1;
@@ -112,19 +117,25 @@ public class UiccController extends Handler {
     public static final int APP_FAM_3GPP2 = 2;
     public static final int APP_FAM_IMS   = 3;
 
-    private static final int EVENT_ICC_STATUS_CHANGED = 1;
+    // MTK-START: add-on
+    protected static final int EVENT_ICC_STATUS_CHANGED = 1;
+    // MTK-END
     private static final int EVENT_SLOT_STATUS_CHANGED = 2;
-    private static final int EVENT_GET_ICC_STATUS_DONE = 3;
-    private static final int EVENT_GET_SLOT_STATUS_DONE = 4;
-    private static final int EVENT_RADIO_ON = 5;
-    private static final int EVENT_RADIO_AVAILABLE = 6;
+    // MTK-START: add-on
+    protected static final int EVENT_GET_ICC_STATUS_DONE = 3;
+    protected static final int EVENT_GET_SLOT_STATUS_DONE = 4;
+    protected static final int EVENT_RADIO_ON = 5;
+    protected static final int EVENT_RADIO_AVAILABLE = 6;
+    // MTK-END
     private static final int EVENT_RADIO_UNAVAILABLE = 7;
     private static final int EVENT_SIM_REFRESH = 8;
     private static final int EVENT_EID_READY = 9;
 
     // this needs to be here, because on bootup we dont know which index maps to which UiccSlot
+    // MTK-START: add-on 
     @UnsupportedAppUsage
-    private CommandsInterface[] mCis;
+    protected CommandsInterface[] mCis;
+    // MTK-END
     @VisibleForTesting
     public UiccSlot[] mUiccSlots;
     private int[] mPhoneIdToSlotId;
@@ -159,8 +170,11 @@ public class UiccController extends Handler {
     // SharedPreferences key for saving the default euicc card ID
     private static final String DEFAULT_CARD = "default_card";
 
+    // MTK-START: add-on 
     @UnsupportedAppUsage
-    private static final Object mLock = new Object();
+    protected static final Object mLock = new Object();
+    // MTK-END
+
     @UnsupportedAppUsage
     private static UiccController mInstance;
     private static ArrayList<IccSlotStatus> sLastSlotStatus;
@@ -172,7 +186,9 @@ public class UiccController extends Handler {
     protected RegistrantList mIccChangedRegistrants = new RegistrantList();
 
     private UiccStateChangedLauncher mLauncher;
-    private RadioConfig mRadioConfig;
+    // MTK-START: add-on
+    protected RadioConfig mRadioConfig;
+    // MTK-END
 
     // LocalLog buffer to hold important SIM related events for debugging
     static LocalLog sLocalLog = new LocalLog(100);
@@ -182,12 +198,20 @@ public class UiccController extends Handler {
             if (mInstance != null) {
                 throw new RuntimeException("UiccController.make() should only be called once");
             }
-            mInstance = new UiccController(c, ci);
+            // MTK-START: add-on
+            TelephonyComponentFactory telephonyComponentFactory
+                    = TelephonyComponentFactory.getInstance()
+                    .inject(TelephonyComponentFactory.class.getName());
+            mInstance = telephonyComponentFactory.makeUiccController(c, ci);
+            //mInstance = new UiccController(c, ci);
+            // MTK-END
             return mInstance;
         }
     }
 
-    private UiccController(Context c, CommandsInterface []ci) {
+    // MTK-START: add-on
+    public UiccController(Context c, CommandsInterface []ci) {
+    // MTK-END
         if (DBG) log("Creating UiccController");
         mContext = c;
         mCis = ci;
@@ -512,7 +536,9 @@ public class UiccController extends Handler {
         }
     }
 
-    private Integer getCiIndex(Message msg) {
+    // MTK-START: add-on
+    protected Integer getCiIndex(Message msg) {
+    // MTK-END
         AsyncResult ar;
         Integer index = new Integer(PhoneConstants.DEFAULT_CARD_INDEX);
 
@@ -562,8 +588,10 @@ public class UiccController extends Handler {
         }
     }
 
-    static void updateInternalIccState(Context context, IccCardConstants.State state, String reason,
-            int phoneId) {
+    // MTK-START: add on
+    static public void updateInternalIccState(Context context, IccCardConstants.State state,
+            String reason, int phoneId) {
+    // MTK-END
         updateInternalIccState(context, state, reason, phoneId, false);
     }
 
@@ -571,6 +599,7 @@ public class UiccController extends Handler {
     // broadcast a state change
     static void updateInternalIccState(Context context, IccCardConstants.State state, String reason,
             int phoneId, boolean absentAndInactive) {
+
         TelephonyManager telephonyManager = (TelephonyManager) context.getSystemService(
                 Context.TELEPHONY_SERVICE);
         telephonyManager.setSimStateForPhone(phoneId, state.toString());
@@ -584,7 +613,9 @@ public class UiccController extends Handler {
         }
     }
 
-    private synchronized void onGetIccCardStatusDone(AsyncResult ar, Integer index) {
+    // MTK-START: add on
+    protected synchronized void onGetIccCardStatusDone(AsyncResult ar, Integer index) {
+    // MTK-END
         if (ar.exception != null) {
             Rlog.e(LOG_TAG,"Error getting ICC status. "
                     + "RIL_REQUEST_GET_ICC_STATUS should "
@@ -1029,7 +1060,9 @@ public class UiccController extends Handler {
         return (index >= 0 && index < TelephonyManager.getDefault().getPhoneCount());
     }
 
-    private boolean isValidSlotIndex(int index) {
+    // MTK-START: add on
+    protected boolean isValidSlotIndex(int index) {
+    // MTK-END
         return (index >= 0 && index < mUiccSlots.length);
     }
 

@@ -74,17 +74,19 @@ public class SendReq extends MultimediaMessagePdu {
      *
      * @param headers Headers for this PDU.
      */
-    SendReq(PduHeaders headers) {
+     /*MTK Change access type*/
+    protected SendReq(PduHeaders headers) {
         super(headers);
     }
 
+    /*MTK Change access type*/
     /**
      * Constructor with given headers and body
      *
      * @param headers Headers for this PDU.
      * @param body Body of this PDu.
      */
-    SendReq(PduHeaders headers, PduBody body) {
+    public SendReq(PduHeaders headers, PduBody body) {
         super(headers, body);
     }
 

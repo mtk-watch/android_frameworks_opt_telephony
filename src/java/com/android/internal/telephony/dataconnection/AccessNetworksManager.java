@@ -30,6 +30,7 @@ import android.os.PersistableBundle;
 import android.os.Registrant;
 import android.os.RegistrantList;
 import android.os.RemoteException;
+import android.os.SystemProperties;
 import android.os.UserHandle;
 import android.telephony.AccessNetworkConstants.AccessNetworkType;
 import android.telephony.CarrierConfigManager;
@@ -46,6 +47,7 @@ import com.android.internal.telephony.Phone;
 import com.android.internal.util.IndentingPrintWriter;
 
 import java.io.FileDescriptor;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -60,7 +62,7 @@ public class AccessNetworksManager extends Handler {
     private static final String TAG = AccessNetworksManager.class.getSimpleName();
     private static final boolean DBG = false;
 
-    private static final int[] SUPPORTED_APN_TYPES = {
+    private static int[] SUPPORTED_APN_TYPES = {
             ApnSetting.TYPE_DEFAULT,
             ApnSetting.TYPE_MMS,
             ApnSetting.TYPE_FOTA,
@@ -88,6 +90,32 @@ public class AccessNetworksManager extends Handler {
     private final SparseArray<int[]> mAvailableNetworks = new SparseArray<>();
 
     private final RegistrantList mQualifiedNetworksChangedRegistrants = new RegistrantList();
+
+    /**
+     * Static methods used for MTK add-on reflections
+     */
+
+    static {
+        if (SystemProperties.get("ro.vendor.mtk_telephony_add_on_policy", "0").equals("0")) {
+            Class<?> clz = null;
+            Field field = null;
+            try {
+                clz = Class.forName("mediatek.telephony.data.MtkApnSetting");
+            } catch (Exception e) {
+                Rlog.d(TAG, e.toString());
+            }
+
+            if (clz != null) {
+                try {
+                    field = clz.getDeclaredField("MTK_SUPPORTED_APN_TYPES");
+                    field.setAccessible(true);
+                    SUPPORTED_APN_TYPES = (int[]) field.get(null);
+                } catch (Exception e) {
+                    Rlog.d(TAG, e.toString());
+                }
+            }
+        }
+    }
 
     private final BroadcastReceiver mConfigChangedReceiver = new BroadcastReceiver() {
         @Override
@@ -238,7 +266,9 @@ public class AccessNetworksManager extends Handler {
      * configuration from carrier config if it exists. If not, read it from resources.
      */
     private void bindQualifiedNetworksService() {
+        Intent intent = null;
         String packageName = getQualifiedNetworksServicePackageName();
+        String className = getQualifiedNetworksServiceClassName();
 
         if (DBG) log("Qualified network service package = " + packageName);
         if (TextUtils.isEmpty(packageName)) {
@@ -249,6 +279,15 @@ public class AccessNetworksManager extends Handler {
         if (TextUtils.equals(packageName, mTargetBindingPackageName)) {
             if (DBG) log("Service " + packageName + " already bound or being bound.");
             return;
+        }
+
+        if (TextUtils.isEmpty(className)) {
+            intent = new Intent(QualifiedNetworksService.QUALIFIED_NETWORKS_SERVICE_INTERFACE);
+            intent.setPackage(packageName);
+        } else {
+            ComponentName cm = new ComponentName(packageName, className);
+            intent = new Intent(QualifiedNetworksService.QUALIFIED_NETWORKS_SERVICE_INTERFACE)
+                    .setComponent(cm);
         }
 
         if (mIQualifiedNetworksService != null
@@ -266,11 +305,8 @@ public class AccessNetworksManager extends Handler {
         try {
             mServiceConnection = new QualifiedNetworksServiceConnection();
             log("bind to " + packageName);
-            if (!mPhone.getContext().bindService(
-                    new Intent(QualifiedNetworksService.QUALIFIED_NETWORKS_SERVICE_INTERFACE)
-                            .setPackage(packageName),
-                    mServiceConnection,
-                    Context.BIND_AUTO_CREATE)) {
+            if (!mPhone.getContext().bindService(intent, mServiceConnection,
+                        Context.BIND_AUTO_CREATE)) {
                 loge("Cannot bind to the qualified networks service.");
                 return;
             }
@@ -306,6 +342,32 @@ public class AccessNetworksManager extends Handler {
         return packageName;
     }
 
+    /**
+     * Get the qualified network service class name.
+     *
+     * @return class name of the qualified networks service package.
+     */
+    private String getQualifiedNetworksServiceClassName() {
+        // Read package name from the resource
+        //String className = mPhone.getContext().getResources().getString(
+        //        com.android.internal.R.string.config_qualified_networks_service_class);
+        String className = null;
+
+        PersistableBundle b = mCarrierConfigManager.getConfigForSubId(mPhone.getSubId());
+
+        if (b != null) {
+            // If carrier config overrides it, use the one from carrier config
+            //String carrierConfigClassName =  b.getString(CarrierConfigManager
+            //        .KEY_CARRIER_QUALIFIED_NETWORKS_SERVICE_CLASS_OVERRIDE_STRING);
+            String carrierConfigClassName = null;
+            if (!TextUtils.isEmpty(carrierConfigClassName)) {
+                if (DBG) log("Found carrier config override " + carrierConfigClassName);
+                className = carrierConfigClassName;
+            }
+        }
+
+        return className;
+    }
 
     private @NonNull List<QualifiedNetworks> getQualifiedNetworksList() {
         List<QualifiedNetworks> qualifiedNetworksList = new ArrayList<>();

@@ -299,7 +299,10 @@ public class ImsSmsDispatcher extends SMSDispatcher {
     }
 
     @Override
-    protected String getFormat() {
+    // MTK-START
+    // Change visibility for the proprietary class
+    public String getFormat() {
+    // MTK-END
         try {
             return getImsManager().getSmsFormat();
         } catch (ImsException e) {

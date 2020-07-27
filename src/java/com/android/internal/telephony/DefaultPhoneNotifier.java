@@ -188,6 +188,7 @@ public class DefaultPhoneNotifier implements PhoneNotifier {
 
         try {
             if (mRegistry != null) {
+                mtkConvertDunToDefault(apnType, sender, ss);
                 mRegistry.notifyDataConnectionForSubscriber(phoneId, subId,
                     PhoneConstantConversions.convertDataState(state),
                         sender.isDataAllowed(ApnSetting.getApnTypesBitmaskFromString(apnType)),
@@ -195,8 +196,10 @@ public class DefaultPhoneNotifier implements PhoneNotifier {
                         apnType,
                         linkProperties,
                         networkCapabilities,
-                        ((telephony != null) ? telephony.getDataNetworkType(subId) :
-                                TelephonyManager.NETWORK_TYPE_UNKNOWN), roaming);
+                        /// M: Data icon performance enhancement @{
+                        mtkGetDataNetworkType(telephony, sender, apnType, state, subId),
+                        /// @}
+                        roaming);
             }
         } catch (RemoteException ex) {
             // system process is dead
@@ -446,6 +449,22 @@ public class DefaultPhoneNotifier implements PhoneNotifier {
             default:
                 return PreciseCallState.PRECISE_CALL_STATE_IDLE;
         }
+    }
+
+    /**
+     * Anchor method of doNotifyDataConnection
+     */
+    protected int mtkGetDataNetworkType(TelephonyManager telephony, Phone sender,
+            String apnType, PhoneConstants.DataState state, int subId) {
+        return ((telephony != null) ? telephony.getDataNetworkType(subId)
+                : TelephonyManager.NETWORK_TYPE_UNKNOWN);
+    }
+
+    /**
+     * Anchor method of doNotifyDataConnection
+     */
+    protected String mtkConvertDunToDefault(String apnType, Phone sender, ServiceState ss) {
+        return apnType;
     }
 
     private void log(String s) {

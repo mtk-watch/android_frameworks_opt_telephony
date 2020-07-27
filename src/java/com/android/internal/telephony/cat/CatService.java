@@ -44,6 +44,9 @@ import android.telephony.TelephonyManager;
 import com.android.internal.telephony.CommandsInterface;
 import com.android.internal.telephony.PhoneConstants;
 import com.android.internal.telephony.SubscriptionController;
+//MTK-START
+import com.android.internal.telephony.TelephonyComponentFactory;
+//MTK-END
 import com.android.internal.telephony.uicc.IccCardStatus.CardState;
 import com.android.internal.telephony.uicc.IccFileHandler;
 import com.android.internal.telephony.uicc.IccRecords;
@@ -58,26 +61,6 @@ import java.io.ByteArrayOutputStream;
 import java.util.List;
 import java.util.Locale;
 
-class RilMessage {
-    @UnsupportedAppUsage
-    int mId;
-    @UnsupportedAppUsage
-    Object mData;
-    ResultCode mResCode;
-
-    @UnsupportedAppUsage
-    RilMessage(int msgId, String rawData) {
-        mId = msgId;
-        mData = rawData;
-    }
-
-    RilMessage(RilMessage other) {
-        mId = other.mId;
-        mData = other.mData;
-        mResCode = other.mResCode;
-    }
-}
-
 /**
  * Class that implements SIM Toolkit Telephony Service. Interacts with the RIL
  * and application.
@@ -88,67 +71,70 @@ public class CatService extends Handler implements AppInterface {
     private static final boolean DBG = false;
 
     // Class members
-    private static IccRecords mIccRecords;
-    private static UiccCardApplication mUiccApplication;
+    // MTK-START
+    protected /*private*/ static IccRecords mIccRecords;
+    protected /*private*/ static UiccCardApplication mUiccApplication;
 
     // Service members.
     // Protects singleton instance lazy initialization.
     @UnsupportedAppUsage
-    private static final Object sInstanceLock = new Object();
+    protected /*private*/ static final Object sInstanceLock = new Object();
     @UnsupportedAppUsage
-    private static CatService[] sInstance = null;
+    protected /*private*/ static CatService[] sInstance = null;
     @UnsupportedAppUsage
-    private CommandsInterface mCmdIf;
+    protected /*private*/ CommandsInterface mCmdIf;
     @UnsupportedAppUsage
-    private Context mContext;
+    protected /*private*/ Context mContext;
     @UnsupportedAppUsage
-    private CatCmdMessage mCurrntCmd = null;
+    protected /*private*/ CatCmdMessage mCurrntCmd = null;
     @UnsupportedAppUsage
-    private CatCmdMessage mMenuCmd = null;
+    protected /*private*/ CatCmdMessage mMenuCmd = null;
 
     @UnsupportedAppUsage
-    private RilMessageDecoder mMsgDecoder = null;
+    protected /*private*/ RilMessageDecoder mMsgDecoder = null;
     @UnsupportedAppUsage
-    private boolean mStkAppInstalled = false;
+    protected /*private*/ boolean mStkAppInstalled = false;
 
     @UnsupportedAppUsage
-    private UiccController mUiccController;
-    private CardState mCardState = CardState.CARDSTATE_ABSENT;
+    protected /*private*/ UiccController mUiccController;
+    protected /*private*/ CardState mCardState = CardState.CARDSTATE_ABSENT;
 
     // Service constants.
-    protected static final int MSG_ID_SESSION_END              = 1;
-    protected static final int MSG_ID_PROACTIVE_COMMAND        = 2;
-    protected static final int MSG_ID_EVENT_NOTIFY             = 3;
-    protected static final int MSG_ID_CALL_SETUP               = 4;
-    static final int MSG_ID_REFRESH                  = 5;
-    static final int MSG_ID_RESPONSE                 = 6;
-    static final int MSG_ID_SIM_READY                = 7;
+    public /*protected*/ static final int MSG_ID_SESSION_END              = 1;
+    public /*protected*/ static final int MSG_ID_PROACTIVE_COMMAND        = 2;
+    public /*protected*/ static final int MSG_ID_EVENT_NOTIFY             = 3;
+    public /*protected*/ static final int MSG_ID_CALL_SETUP               = 4;
+    public static final int MSG_ID_REFRESH                  = 5;
+    public static final int MSG_ID_RESPONSE                 = 6;
+    public static final int MSG_ID_SIM_READY                = 7;
+    // MTK-END
 
     protected static final int MSG_ID_ICC_CHANGED    = 8;
     protected static final int MSG_ID_ALPHA_NOTIFY   = 9;
-
-    static final int MSG_ID_RIL_MSG_DECODED          = 10;
+    // MTK-START
+    public static final int MSG_ID_RIL_MSG_DECODED          = 10;
 
     // Events to signal SIM presence or absent in the device.
-    private static final int MSG_ID_ICC_RECORDS_LOADED       = 20;
+    public /*private*/ static final int MSG_ID_ICC_RECORDS_LOADED       = 20;
 
     //Events to signal SIM REFRESH notificatations
-    private static final int MSG_ID_ICC_REFRESH  = 30;
+    public /*private*/ static final int MSG_ID_ICC_REFRESH  = 30;
 
-    private static final int DEV_ID_KEYPAD      = 0x01;
-    private static final int DEV_ID_DISPLAY     = 0x02;
-    private static final int DEV_ID_UICC        = 0x81;
-    private static final int DEV_ID_TERMINAL    = 0x82;
-    private static final int DEV_ID_NETWORK     = 0x83;
+    protected /*private*/ static final int DEV_ID_KEYPAD      = 0x01;
+    protected /*private*/ static final int DEV_ID_DISPLAY     = 0x02;
+    protected /*private*/ static final int DEV_ID_UICC        = 0x81;
+    protected /*private*/ static final int DEV_ID_TERMINAL    = 0x82;
+    protected /*private*/ static final int DEV_ID_NETWORK     = 0x83;
 
-    static final String STK_DEFAULT = "Default Message";
+    public static final String STK_DEFAULT = "Default Message";
 
     @UnsupportedAppUsage
-    private int mSlotId;
+    protected /*private*/ int mSlotId;
 
     /* For multisim catservice should not be singleton */
-    private CatService(CommandsInterface ci, UiccCardApplication ca, IccRecords ir,
+    public /*private*/ CatService(CommandsInterface ci, UiccCardApplication ca, IccRecords ir,
             Context context, IccFileHandler fh, UiccProfile uiccProfile, int slotId) {
+    // MTK-END
         if (ci == null || ca == null || ir == null || context == null || fh == null
                 || uiccProfile == null) {
             throw new NullPointerException(
@@ -232,8 +218,12 @@ public class CatService extends Handler implements AppInterface {
                         || uiccProfile == null) {
                     return null;
                 }
-
-                sInstance[slotId] = new CatService(ci, ca, ir, context, fh, uiccProfile, slotId);
+                // MTK-START
+                // sInstance[slotId] = new CatService(ci, ca, ir, context, fh, uiccProfile, slotId);
+                sInstance[slotId] = TelephonyComponentFactory.getInstance()
+                        .inject(TelephonyComponentFactory.class.getName())
+                        .makeCatService(ci, ca, ir, context, fh, uiccProfile, slotId);
+                // MTK-END
             } else if ((ir != null) && (mIccRecords != ir)) {
                 if (mIccRecords != null) {
                     mIccRecords.unregisterForRecordsLoaded(sInstance[slotId]);
@@ -288,8 +278,9 @@ public class CatService extends Handler implements AppInterface {
     protected void finalize() {
         CatLog.d(this, "Service finalized");
     }
-
-    private void handleRilMsg(RilMessage rilMsg) {
+    // MTK-START
+    protected /*private*/ void handleRilMsg(RilMessage rilMsg) {
+    // MTK-END
         if (rilMsg == null) {
             return;
         }
@@ -351,7 +342,9 @@ public class CatService extends Handler implements AppInterface {
      * supported by the Android framework. In case of SETUP_EVENT_LIST has NULL events
      * or no events, all the events need to be reset.
      */
-    private boolean isSupportedSetupEventCommand(CatCmdMessage cmdMsg) {
+    // MTK-START
+    protected /*private*/ boolean isSupportedSetupEventCommand(CatCmdMessage cmdMsg) {
+    // MTK-END
         boolean flag = true;
 
         for (int eventVal: cmdMsg.getSetEventList().eventList) {
@@ -377,7 +370,9 @@ public class CatService extends Handler implements AppInterface {
      * RIL_REQUEST_STK_SEND_TERMINAL_RESPONSE will be send back if the command is
      * from RIL_UNSOL_STK_PROACTIVE_COMMAND.
      */
-    private void handleCommand(CommandParams cmdParams, boolean isProactiveCmd) {
+    // MTK-START
+    protected /*private*/ void handleCommand(CommandParams cmdParams, boolean isProactiveCmd) {
+    // MTK-END
         CatLog.d(this, cmdParams.getCommandType().name());
 
         // Log all proactive commands.
@@ -541,7 +536,9 @@ public class CatService extends Handler implements AppInterface {
     }
 
 
-    private void broadcastCatCmdIntent(CatCmdMessage cmdMsg) {
+    // MTK-START
+    protected /*private*/ void broadcastCatCmdIntent(CatCmdMessage cmdMsg) {
+    // MTK-END
         Intent intent = new Intent(AppInterface.CAT_CMD_ACTION);
         intent.putExtra("STK CMD", cmdMsg);
         intent.putExtra("SLOT_ID", mSlotId);
@@ -554,7 +551,9 @@ public class CatService extends Handler implements AppInterface {
      * Handles RIL_UNSOL_STK_SESSION_END unsolicited command from RIL.
      *
      */
-    private void handleSessionEnd() {
+    // MTK-START
+    protected /*private*/ void handleSessionEnd() {
+    // MTK-END
         CatLog.d(this, "SESSION END on "+ mSlotId);
 
         mCurrntCmd = mMenuCmd;
@@ -564,11 +563,12 @@ public class CatService extends Handler implements AppInterface {
         mContext.sendBroadcast(intent, AppInterface.STK_PERMISSION);
     }
 
-
+    // MTK-START
     @UnsupportedAppUsage
-    private void sendTerminalResponse(CommandDetails cmdDet,
+    protected /*private*/ void sendTerminalResponse(CommandDetails cmdDet,
             ResultCode resultCode, boolean includeAdditionalInfo,
             int additionalInfo, ResponseData resp) {
+    // MTK-END
 
         if (cmdDet == null) {
             return;
@@ -633,10 +633,15 @@ public class CatService extends Handler implements AppInterface {
         }
 
         mCmdIf.sendTerminalResponse(hexString, null);
+        // MTK-START
+        onSetResponsedFlag();
+        // MTK-END
     }
 
-    private void encodeOptionalTags(CommandDetails cmdDet,
+    // MTK-START
+    protected /*private*/ void encodeOptionalTags(CommandDetails cmdDet,
             ResultCode resultCode, Input cmdInput, ByteArrayOutputStream buf) {
+    // MTK-END
         CommandType cmdType = AppInterface.CommandType.fromInt(cmdDet.typeOfCommand);
         if (cmdType != null) {
             switch (cmdType) {
@@ -666,7 +671,9 @@ public class CatService extends Handler implements AppInterface {
         }
     }
 
-    private void getInKeyResponse(ByteArrayOutputStream buf, Input cmdInput) {
+    // MTK-START
+    protected /*private*/ void getInKeyResponse(ByteArrayOutputStream buf, Input cmdInput) {
+    // MTK-END
         int tag = ComprehensionTlvTag.DURATION.value();
 
         buf.write(tag);
@@ -675,7 +682,9 @@ public class CatService extends Handler implements AppInterface {
         buf.write(cmdInput.duration.timeInterval); // Time Duration
     }
 
-    private void getPliResponse(ByteArrayOutputStream buf) {
+    // MTK-START
+    protected /*private*/ void getPliResponse(ByteArrayOutputStream buf) {
+    // MTK-END
         // Locale Language Setting
         final String lang = Locale.getDefault().getLanguage();
 
@@ -688,7 +697,9 @@ public class CatService extends Handler implements AppInterface {
         }
     }
 
-    private void sendMenuSelection(int menuId, boolean helpRequired) {
+    // MTK-START
+    protected /*private*/ void sendMenuSelection(int menuId, boolean helpRequired) {
+    // MTK-END
 
         ByteArrayOutputStream buf = new ByteArrayOutputStream();
 
@@ -730,8 +741,10 @@ public class CatService extends Handler implements AppInterface {
         mCmdIf.sendEnvelope(hexString, null);
     }
 
-    private void eventDownload(int event, int sourceId, int destinationId,
+    // MTK-START
+    protected /*private*/ void eventDownload(int event, int sourceId, int destinationId,
             byte[] additionalInfo, boolean oneShot) {
+    // MTK-END
 
         ByteArrayOutputStream buf = new ByteArrayOutputStream();
 
@@ -903,8 +916,10 @@ public class CatService extends Handler implements AppInterface {
      ** REFRESH, additional information is sent in 'refresh_result'
      **
      **/
-    private void  broadcastCardStateAndIccRefreshResp(CardState cardState,
+    // MTK-START
+    protected /*private*/ void  broadcastCardStateAndIccRefreshResp(CardState cardState,
             IccRefreshResponse iccRefreshState) {
+    // MTK-END
         Intent intent = new Intent(AppInterface.CAT_ICC_STATUS_CHANGE);
         boolean cardPresent = (cardState == CardState.CARDSTATE_PRESENT);
 
@@ -924,7 +939,9 @@ public class CatService extends Handler implements AppInterface {
         mContext.sendBroadcast(intent, AppInterface.STK_PERMISSION);
     }
 
-    private void broadcastAlphaMessage(String alphaString) {
+    // MTK-START
+    protected /*private*/ void broadcastAlphaMessage(String alphaString) {
+    // MTK-END
         CatLog.d(this, "Broadcasting CAT Alpha message from card: " + alphaString);
         Intent intent = new Intent(AppInterface.CAT_ALPHA_NOTIFY_ACTION);
         intent.addFlags(Intent.FLAG_RECEIVER_FOREGROUND);
@@ -944,7 +961,9 @@ public class CatService extends Handler implements AppInterface {
         msg.sendToTarget();
     }
 
-    private boolean validateResponse(CatResponseMessage resMsg) {
+    // MTK-START
+    protected /*private*/ boolean validateResponse(CatResponseMessage resMsg) {
+    // MTK-END
         boolean validResponse = false;
         if ((resMsg.mCmdDet.typeOfCommand == CommandType.SET_UP_EVENT_LIST.value())
                 || (resMsg.mCmdDet.typeOfCommand == CommandType.SET_UP_MENU.value())) {
@@ -957,7 +976,9 @@ public class CatService extends Handler implements AppInterface {
         return validResponse;
     }
 
-    private boolean removeMenu(Menu menu) {
+    // MTK-START
+    protected /*private*/ boolean removeMenu(Menu menu) {
+    // MTK-END
         try {
             if (menu.items.size() == 1 && menu.items.get(0) == null) {
                 return true;
@@ -969,7 +990,9 @@ public class CatService extends Handler implements AppInterface {
         return false;
     }
 
-    private void handleCmdResponse(CatResponseMessage resMsg) {
+    // MTK-START
+    protected /*private*/ void handleCmdResponse(CatResponseMessage resMsg) {
+    // MTK-END
         // Make sure the response details match the last valid command. An invalid
         // response is a one that doesn't have a corresponding proactive command
         // and sending it can "confuse" the baseband/ril.
@@ -1152,7 +1175,9 @@ public class CatService extends Handler implements AppInterface {
         }
     }
 
-    void updateIccAvailability() {
+    // MTK-START
+    protected void updateIccAvailability() {
+    // MTK-END
         if (null == mUiccController) {
             return;
         }
@@ -1183,4 +1208,9 @@ public class CatService extends Handler implements AppInterface {
         am.updatePersistentConfiguration(config);
         BackupManager.dataChanged("com.android.providers.settings");
     }
+
+    // MTK-START
+    protected void onSetResponsedFlag() {
+    }
+    // MTK-END
 }

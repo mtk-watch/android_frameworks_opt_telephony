@@ -19,17 +19,18 @@ package com.android.internal.telephony.cat;
 import android.annotation.UnsupportedAppUsage;
 
 public class CatResponseMessage {
-        CommandDetails mCmdDet = null;
-        ResultCode mResCode  = ResultCode.OK;
-        int mUsersMenuSelection = 0;
-        String mUsersInput  = null;
-        boolean mUsersYesNoSelection = false;
-        boolean mUsersConfirm = false;
-        boolean mIncludeAdditionalInfo = false;
-        int mAdditionalInfo = 0;
-        int mEventValue = -1;
-        byte[] mAddedInfo = null;
-
+        // MTK-START
+        public CommandDetails mCmdDet = null;
+        public ResultCode mResCode  = ResultCode.OK;
+        public int mUsersMenuSelection = 0;
+        public String mUsersInput  = null;
+        public boolean mUsersYesNoSelection = false;
+        public boolean mUsersConfirm = false;
+        public boolean mIncludeAdditionalInfo = false;
+        public int mAdditionalInfo = 0;
+        public int mEventValue = -1;
+        public byte[] mAddedInfo = null;
+        // MTK-END
         public CatResponseMessage(CatCmdMessage cmdMsg) {
             mCmdDet = cmdMsg.mCmdDet;
         }
@@ -64,8 +65,9 @@ public class CatResponseMessage {
             mIncludeAdditionalInfo = true;
             mAdditionalInfo = info;
         }
-
-        CommandDetails getCmdDetails() {
+        // MTK-START
+        public CommandDetails getCmdDetails() {
+        // MTK-END
             return mCmdDet;
         }
     }

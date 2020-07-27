@@ -60,6 +60,7 @@ import android.os.RegistrantList;
 import android.os.ResultReceiver;
 import android.os.SystemProperties;
 import android.os.UserHandle;
+import android.telecom.VideoProfile;
 import android.telephony.AccessNetworkConstants;
 import android.telephony.CarrierConfigManager;
 import android.telephony.NetworkRegistrationInfo;
@@ -114,25 +115,25 @@ import java.util.List;
  */
 public class ImsPhone extends ImsPhoneBase {
     private static final String LOG_TAG = "ImsPhone";
-    private static final boolean DBG = true;
+    protected static final boolean DBG = true;
     private static final boolean VDBG = false; // STOPSHIP if true
 
-    private static final int EVENT_SET_CALL_BARRING_DONE             = EVENT_LAST + 1;
-    private static final int EVENT_GET_CALL_BARRING_DONE             = EVENT_LAST + 2;
-    private static final int EVENT_SET_CALL_WAITING_DONE             = EVENT_LAST + 3;
-    private static final int EVENT_GET_CALL_WAITING_DONE             = EVENT_LAST + 4;
-    private static final int EVENT_SET_CLIR_DONE                     = EVENT_LAST + 5;
-    private static final int EVENT_GET_CLIR_DONE                     = EVENT_LAST + 6;
-    private static final int EVENT_DEFAULT_PHONE_DATA_STATE_CHANGED  = EVENT_LAST + 7;
+    protected static final int EVENT_SET_CALL_BARRING_DONE             = EVENT_LAST + 1;
+    protected static final int EVENT_GET_CALL_BARRING_DONE             = EVENT_LAST + 2;
+    protected static final int EVENT_SET_CALL_WAITING_DONE             = EVENT_LAST + 3;
+    protected static final int EVENT_GET_CALL_WAITING_DONE             = EVENT_LAST + 4;
+    protected static final int EVENT_SET_CLIR_DONE                     = EVENT_LAST + 5;
+    protected static final int EVENT_GET_CLIR_DONE                     = EVENT_LAST + 6;
+    protected static final int EVENT_DEFAULT_PHONE_DATA_STATE_CHANGED  = EVENT_LAST + 7;
     @VisibleForTesting
     public static final int EVENT_SERVICE_STATE_CHANGED             = EVENT_LAST + 8;
-    private static final int EVENT_VOICE_CALL_ENDED                  = EVENT_LAST + 9;
+    protected static final int EVENT_VOICE_CALL_ENDED                  = EVENT_LAST + 9;
 
-    static final int RESTART_ECM_TIMER = 0; // restart Ecm timer
-    static final int CANCEL_ECM_TIMER  = 1; // cancel Ecm timer
+    public static final int RESTART_ECM_TIMER = 0; // restart Ecm timer
+    public static final int CANCEL_ECM_TIMER  = 1; // cancel Ecm timer
 
     // Default Emergency Callback Mode exit timer
-    private static final int DEFAULT_ECM_EXIT_TIMER_VALUE = 300000;
+    protected static final int DEFAULT_ECM_EXIT_TIMER_VALUE = 300000;
 
     public static class ImsDialArgs extends DialArgs {
         public static class Builder extends DialArgs.Builder<ImsDialArgs.Builder> {
@@ -188,35 +189,35 @@ public class ImsPhone extends ImsPhoneBase {
     }
 
     // Instance Variables
-    Phone mDefaultPhone;
+    public Phone mDefaultPhone;
     @UnsupportedAppUsage
-    ImsPhoneCallTracker mCT;
-    ImsExternalCallTracker mExternalCallTracker;
+    public ImsPhoneCallTracker mCT;
+    protected ImsExternalCallTracker mExternalCallTracker;
     @UnsupportedAppUsage
-    private ArrayList <ImsPhoneMmiCode> mPendingMMIs = new ArrayList<ImsPhoneMmiCode>();
+    protected ArrayList <ImsPhoneMmiCode> mPendingMMIs = new ArrayList<ImsPhoneMmiCode>();
     @UnsupportedAppUsage
-    private ServiceState mSS = new ServiceState();
+    protected ServiceState mSS = new ServiceState();
 
     // To redial silently through GSM or CDMA when dialing through IMS fails
     private String mLastDialString;
 
-    private WakeLock mWakeLock;
+    protected WakeLock mWakeLock;
 
     // mEcmExitRespRegistrant is informed after the phone has been exited the emergency
     // callback mode keep track of if phone is in emergency callback mode
-    private Registrant mEcmExitRespRegistrant;
+    protected Registrant mEcmExitRespRegistrant;
 
     private final RegistrantList mSilentRedialRegistrants = new RegistrantList();
 
-    private boolean mImsRegistered = false;
+    protected boolean mImsRegistered = false;
 
-    private boolean mRoaming = false;
+    protected boolean mRoaming = false;
 
     // List of Registrants to send supplementary service notifications to.
     private RegistrantList mSsnRegistrants = new RegistrantList();
 
     // A runnable which is used to automatically exit from Ecm after a period of time.
-    private Runnable mExitEcmRunnable = new Runnable() {
+    protected Runnable mExitEcmRunnable = new Runnable() {
         @Override
         public void run() {
             exitEmergencyCallbackMode();
@@ -225,7 +226,7 @@ public class ImsPhone extends ImsPhoneBase {
 
     private Uri[] mCurrentSubscriberUris;
 
-    protected void setCurrentSubscriberUris(Uri[] currentSubscriberUris) {
+    public void setCurrentSubscriberUris(Uri[] currentSubscriberUris) {
         this.mCurrentSubscriberUris = currentSubscriberUris;
     }
 
@@ -248,13 +249,13 @@ public class ImsPhone extends ImsPhoneBase {
     // mIsCfu (true if reason is call forward unconditional)
     // mOnComplete (Message object passed by client) can be packed &
     // given as a single Cf object as user data to UtInterface.
-    private static class Cf {
-        final String mSetCfNumber;
-        final Message mOnComplete;
-        final boolean mIsCfu;
+    protected static class Cf {
+        public final String mSetCfNumber;
+        public final Message mOnComplete;
+        public final boolean mIsCfu;
 
         @UnsupportedAppUsage
-        Cf(String cfNumber, boolean isCfu, Message onComplete) {
+        public Cf(String cfNumber, boolean isCfu, Message onComplete) {
             mSetCfNumber = cfNumber;
             mIsCfu = isCfu;
             mOnComplete = onComplete;
@@ -310,6 +311,13 @@ public class ImsPhone extends ImsPhoneBase {
         // Force initial roaming state update later, on EVENT_CARRIER_CONFIG_CHANGED.
         // Settings provider or CarrierConfig may not be loaded now.
     }
+
+    /// M: add-on @{
+    protected ImsPhone(String name, Context context, PhoneNotifier notifier,
+            boolean unitTestMode) {
+        super(name, context, notifier, unitTestMode);
+    }
+    /// @}
 
     //todo: get rid of this function. It is not needed since parentPhone obj never changes
     @Override
@@ -493,7 +501,7 @@ public class ImsPhone extends ImsPhoneBase {
         return true;
     }
 
-    private void sendUssdResponse(String ussdRequest, CharSequence message, int returnCode,
+    protected void sendUssdResponse(String ussdRequest, CharSequence message, int returnCode,
                                    ResultReceiver wrappedCallback) {
         UssdResponse response = new UssdResponse(ussdRequest, message);
         Bundle returnData = new Bundle();
@@ -576,9 +584,23 @@ public class ImsPhone extends ImsPhoneBase {
             try {
                 if (getRingingCall().getState() != ImsPhoneCall.State.IDLE) {
                     if (DBG) logd("MmiCode 2: accept ringing call");
-                    mCT.acceptCall(ImsCallProfile.CALL_TYPE_VOICE);
-                } else {
-                    if (DBG) logd("MmiCode 2: holdActiveCall");
+                    /// M: ALPS03887333 Google issue, use VideoProfile State audio only for passing
+                    /// correct value. AcceptCall API requires VIDEO_STATE, but not CALL_TYPE. @{
+                    // mCT.acceptCall(ImsCallProfile.CALL_TYPE_VOICE);
+                    mCT.acceptCall(VideoProfile.STATE_AUDIO_ONLY);
+                    /// @}
+                } else if (getBackgroundCall().getState() == ImsPhoneCall.State.HOLDING) {
+                    // If there's an active ongoing call as well, hold it and the background one
+                    // should automatically unhold. Otherwise just unhold the background call.
+                    if (getForegroundCall().getState() != ImsPhoneCall.State.IDLE) {
+                        if (DBG) logd("MmiCode 2: switch holding and active");
+                        mCT.holdActiveCall();
+                    } else {
+                        if (DBG) logd("MmiCode 2: unhold held call");
+                        mCT.unholdHeldCall();
+                    }
+                } else if (getForegroundCall().getState() != ImsPhoneCall.State.IDLE) {
+                    if (DBG) logd("MmiCode 2: hold active call");
                     mCT.holdActiveCall();
                 }
             } catch (CallStateException e) {
@@ -601,7 +623,7 @@ public class ImsPhone extends ImsPhoneBase {
         return true;
     }
 
-    private boolean handleEctIncallSupplementaryService(String dialString) {
+    protected boolean handleEctIncallSupplementaryService(String dialString) {
 
         int len = dialString.length();
 
@@ -673,7 +695,7 @@ public class ImsPhone extends ImsPhoneBase {
         return result;
     }
 
-    boolean isInCall() {
+    public boolean isInCall() {
         ImsPhoneCall.State foregroundCallState = getForegroundCall().getState();
         ImsPhoneCall.State backgroundCallState = getBackgroundCall().getState();
         ImsPhoneCall.State ringingCallState = getRingingCall().getState();
@@ -698,7 +720,7 @@ public class ImsPhone extends ImsPhoneBase {
     }
 
     @UnsupportedAppUsage
-    void notifyUnknownConnection(Connection c) {
+    public void notifyUnknownConnection(Connection c) {
         mDefaultPhone.notifyUnknownConnectionP(c);
     }
 
@@ -718,7 +740,7 @@ public class ImsPhone extends ImsPhoneBase {
         return dialInternal(dialString, dialArgs, null);
     }
 
-    private Connection dialInternal(String dialString, DialArgs dialArgs,
+    protected Connection dialInternal(String dialString, DialArgs dialArgs,
                                     ResultReceiver wrappedCallback)
             throws CallStateException {
 
@@ -843,7 +865,7 @@ public class ImsPhone extends ImsPhoneBase {
     }
 
     @UnsupportedAppUsage
-    private boolean isValidCommandInterfaceCFReason (int commandInterfaceCFReason) {
+    protected boolean isValidCommandInterfaceCFReason (int commandInterfaceCFReason) {
         switch (commandInterfaceCFReason) {
         case CF_REASON_UNCONDITIONAL:
         case CF_REASON_BUSY:
@@ -858,7 +880,7 @@ public class ImsPhone extends ImsPhoneBase {
     }
 
     @UnsupportedAppUsage
-    private boolean isValidCommandInterfaceCFAction (int commandInterfaceCFAction) {
+    protected boolean isValidCommandInterfaceCFAction (int commandInterfaceCFAction) {
         switch (commandInterfaceCFAction) {
         case CF_ACTION_DISABLE:
         case CF_ACTION_ENABLE:
@@ -871,12 +893,12 @@ public class ImsPhone extends ImsPhoneBase {
     }
 
     @UnsupportedAppUsage
-    private  boolean isCfEnable(int action) {
+    protected  boolean isCfEnable(int action) {
         return (action == CF_ACTION_ENABLE) || (action == CF_ACTION_REGISTRATION);
     }
 
     @UnsupportedAppUsage
-    private int getConditionFromCFReason(int reason) {
+    protected int getConditionFromCFReason(int reason) {
         switch(reason) {
             case CF_REASON_UNCONDITIONAL: return ImsUtInterface.CDIV_CF_UNCONDITIONAL;
             case CF_REASON_BUSY: return ImsUtInterface.CDIV_CF_BUSY;
@@ -891,7 +913,7 @@ public class ImsPhone extends ImsPhoneBase {
         return ImsUtInterface.INVALID;
     }
 
-    private int getCFReasonFromCondition(int condition) {
+    protected int getCFReasonFromCondition(int condition) {
         switch(condition) {
             case ImsUtInterface.CDIV_CF_UNCONDITIONAL: return CF_REASON_UNCONDITIONAL;
             case ImsUtInterface.CDIV_CF_BUSY: return CF_REASON_BUSY;
@@ -907,7 +929,7 @@ public class ImsPhone extends ImsPhoneBase {
     }
 
     @UnsupportedAppUsage
-    private int getActionFromCFAction(int action) {
+    protected int getActionFromCFAction(int action) {
         switch(action) {
             case CF_ACTION_DISABLE: return ImsUtInterface.ACTION_DEACTIVATION;
             case CF_ACTION_ENABLE: return ImsUtInterface.ACTION_ACTIVATION;
@@ -1058,7 +1080,7 @@ public class ImsPhone extends ImsPhoneBase {
         }
     }
 
-    private int getCBTypeFromFacility(String facility) {
+    protected int getCBTypeFromFacility(String facility) {
         if (CB_FACILITY_BAOC.equals(facility)) {
             return ImsUtInterface.CB_BAOC;
         } else if (CB_FACILITY_BAOIC.equals(facility)) {
@@ -1157,7 +1179,7 @@ public class ImsPhone extends ImsPhoneBase {
     }
 
     @UnsupportedAppUsage
-    private void sendErrorResponse(Message onComplete) {
+    public void sendErrorResponse(Message onComplete) {
         logd("sendErrorResponse");
         if (onComplete != null) {
             AsyncResult.forMessage(onComplete, null,
@@ -1176,7 +1198,7 @@ public class ImsPhone extends ImsPhoneBase {
         }
     }
 
-    private CommandException getCommandException(int code, String errorString) {
+    protected CommandException getCommandException(int code, String errorString) {
         logd("getCommandException code= " + code + ", errorString= " + errorString);
         CommandException.Error error = CommandException.Error.GENERIC_FAILURE;
 
@@ -1212,7 +1234,7 @@ public class ImsPhone extends ImsPhoneBase {
         return new CommandException(error, errorString);
     }
 
-    private CommandException getCommandException(Throwable e) {
+    protected CommandException getCommandException(Throwable e) {
         CommandException ex = null;
 
         if (e instanceof ImsException) {
@@ -1224,7 +1246,7 @@ public class ImsPhone extends ImsPhoneBase {
         return ex;
     }
 
-    private void
+    protected void
     onNetworkInitiatedUssd(ImsPhoneMmiCode mmi) {
         logd("onNetworkInitiatedUssd");
         mMmiCompleteRegistrants.notifyRegistrants(
@@ -1232,7 +1254,7 @@ public class ImsPhone extends ImsPhoneBase {
     }
 
     /* package */
-    void onIncomingUSSD(int ussdMode, String ussdMessage) {
+    protected void onIncomingUSSD(int ussdMode, String ussdMessage) {
         if (DBG) logd("onIncomingUSSD ussdMode=" + ussdMode);
 
         boolean isUssdError;
@@ -1323,7 +1345,7 @@ public class ImsPhone extends ImsPhoneBase {
         mCT.notifySrvccState(state);
     }
 
-    /* package */ void
+    /* package */ public void
     initiateSilentRedial() {
         String result = mLastDialString;
         AsyncResult ar = new AsyncResult(null, result, null);
@@ -1362,7 +1384,7 @@ public class ImsPhone extends ImsPhoneBase {
         return mDefaultPhone.getPhoneId();
     }
 
-    private CallForwardInfo getCallForwardInfo(ImsCallForwardInfo info) {
+    protected CallForwardInfo getCallForwardInfo(ImsCallForwardInfo info) {
         CallForwardInfo cfInfo = new CallForwardInfo();
         cfInfo.status = info.getStatus();
         cfInfo.reason = getCFReasonFromCondition(info.getCondition());
@@ -1406,7 +1428,7 @@ public class ImsPhone extends ImsPhoneBase {
         return cfInfos;
     }
 
-    private int[] handleCbQueryResult(ImsSsInfo[] infos) {
+    protected int[] handleCbQueryResult(ImsSsInfo[] infos) {
         int[] cbInfos = new int[1];
         cbInfos[0] = SERVICE_CLASS_NONE;
 
@@ -1417,7 +1439,7 @@ public class ImsPhone extends ImsPhoneBase {
         return cbInfos;
     }
 
-    private int[] handleCwQueryResult(ImsSsInfo[] infos) {
+    protected int[] handleCwQueryResult(ImsSsInfo[] infos) {
         int[] cwInfos = new int[2];
         cwInfos[0] = 0;
 
@@ -1429,7 +1451,7 @@ public class ImsPhone extends ImsPhoneBase {
         return cwInfos;
     }
 
-    private void
+    protected void
     sendResponse(Message onComplete, Object result, Throwable e) {
         if (onComplete != null) {
             CommandException ex = null;
@@ -1441,7 +1463,7 @@ public class ImsPhone extends ImsPhoneBase {
         }
     }
 
-    private void updateDataServiceState() {
+    protected void updateDataServiceState() {
         if (mSS != null && mDefaultPhone.getServiceStateTracker() != null
                 && mDefaultPhone.getServiceStateTracker().mSS != null) {
             ServiceState ss = mDefaultPhone.getServiceStateTracker().mSS;
@@ -1567,7 +1589,7 @@ public class ImsPhone extends ImsPhoneBase {
         return mCT.isInEmergencyCall();
     }
 
-    private void sendEmergencyCallbackModeChange() {
+    protected void sendEmergencyCallbackModeChange() {
         // Send an Intent
         Intent intent = new Intent(TelephonyIntents.ACTION_EMERGENCY_CALLBACK_MODE_CHANGED);
         intent.putExtra(PhoneConstants.PHONE_IN_ECM_STATE, isInEcm());
@@ -1722,7 +1744,7 @@ public class ImsPhone extends ImsPhoneBase {
         mCT.callEndCleanupHandOverCallIfAny();
     }
 
-    private BroadcastReceiver mResultReceiver = new BroadcastReceiver() {
+    protected BroadcastReceiver mResultReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             // Add notification only if alert was not shown by WfcSettings
@@ -1909,7 +1931,7 @@ public class ImsPhone extends ImsPhoneBase {
      *     2) data is in service and it is not IWLAN (if in legacy mode).
      * @param ss non-null ServiceState
      */
-    private void updateRoamingState(ServiceState ss) {
+    protected void updateRoamingState(ServiceState ss) {
         if (ss == null) {
             loge("updateRoamingState: null ServiceState!");
             return;
@@ -1954,7 +1976,7 @@ public class ImsPhone extends ImsPhoneBase {
      * @return true if we are reporting not in service for CS domain over WWAN transport and WLAN
      * for PS domain over WWAN transport.
      */
-    private boolean isCsNotInServiceAndPsWwanReportingWlan(ServiceState ss) {
+    protected boolean isCsNotInServiceAndPsWwanReportingWlan(ServiceState ss) {
         TransportManager tm = mDefaultPhone.getTransportManager();
         // We can not get into this condition if we are in AP-Assisted mode.
         if (tm == null || !tm.isInLegacyMode()) {
@@ -1992,7 +2014,7 @@ public class ImsPhone extends ImsPhoneBase {
         pw.flush();
     }
 
-    private void logi(String s) {
+    protected void logi(String s) {
         Rlog.i(LOG_TAG, "[" + mPhoneId + "] " + s);
     }
 
@@ -2000,11 +2022,11 @@ public class ImsPhone extends ImsPhoneBase {
         Rlog.v(LOG_TAG, "[" + mPhoneId + "] " + s);
     }
 
-    private void logd(String s) {
+    protected void logd(String s) {
         Rlog.d(LOG_TAG, "[" + mPhoneId + "] " + s);
     }
 
-    private void loge(String s) {
+    protected void loge(String s) {
         Rlog.e(LOG_TAG, "[" + mPhoneId + "] " + s);
     }
 }
